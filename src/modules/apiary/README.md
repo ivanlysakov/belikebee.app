@@ -17,6 +17,7 @@ The physical side of the product: apiaries, hives, and the work beekeepers do on
 ## Consumes
 
 - `PaymentSucceeded` (from `billing`): marks the hive as rented by the client.
+- `SubscriptionSuspended` (from `billing`): marks the hive as no longer rented.
 
 ## Out of scope
 

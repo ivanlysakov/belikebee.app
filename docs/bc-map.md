@@ -4,7 +4,7 @@ This document outlines the context boundaries, event-driven model (Domain Events
 
 ---
 
-## 1. Event Storming Lite (12 Key Domain Events)
+## 1. Event Storming Lite (14 Key Domain Events)
 
 All events are stated in the past tense (_Domain Events_):
 
@@ -20,6 +20,8 @@ All events are stated in the past tense (_Domain Events_):
 10. `VisitBookingConfirmed` — The beekeeper confirmed the slot for the visit.
 11. `HoneyHarvestReserved` — The client reserved their final honey quota for the end of the season.
 12. `NotificationSent` — A system notification (Push/Telegram) was sent to the user.
+13. `SubscriptionSuspended` — The subscription was suspended after repeated failed payments.
+14. `VisitReminderTriggered` — A confirmed visit starts soon and its reminder is due (published by a scheduled job).
 
 ---
 
@@ -94,7 +96,9 @@ graph TD
 
     HC -->|HiveAddedToPlatform| BC
 
-    BC -->|SubscriptionPlanSelected| SC
+    BC -->|SubscriptionActivated| SC
+    BC -->|SubscriptionSuspended| SC
+    BC -->|SubscriptionSuspended| HC
     BC -->|PaymentSucceeded| HC
     BC -->|PaymentSucceeded| NC
     BC -->|PaymentFailed| NC
@@ -103,4 +107,13 @@ graph TD
 
     SC -->|VisitBookingRequested| NC
     SC -->|VisitBookingConfirmed| NC
+    SC -->|VisitReminderTriggered| NC
 ```
+
+---
+
+## 4. Open Questions
+
+- **Scheduled jobs**: `VisitReminderTriggered` needs something that runs on a timer (e.g., Vercel Cron, pg-boss). Not decided yet.
+- **Booking cancellation**: there is no way to cancel or reschedule a booking, and no event for it.
+- **Warning before suspension**: UC-4 notifies the client before a subscription is suspended, but no event triggers that message yet.

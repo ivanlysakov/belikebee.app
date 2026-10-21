@@ -12,10 +12,12 @@ Calendars and bookings: when a client can watch or visit the apiary.
 
 - `VisitBookingRequested`
 - `VisitBookingConfirmed`
+- `VisitReminderTriggered`: published by a scheduled job shortly before a confirmed booking's slot.
 
 ## Consumes
 
-- `SubscriptionPlanSelected` (from `billing`): unlocks the bookings included in the client's plan.
+- `SubscriptionActivated` (from `billing`): unlocks the bookings included in the client's plan.
+- `SubscriptionSuspended` (from `billing`): locks them again.
 
 ## Out of scope
 

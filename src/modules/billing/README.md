@@ -17,6 +17,7 @@ Money: what a client pays for, how much, and whether the payment went through. T
 - `PaymentSucceeded`
 - `PaymentFailed`
 - `SubscriptionActivated`
+- `SubscriptionSuspended`
 - `HoneyHarvestReserved`
 
 ## Consumes

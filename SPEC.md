@@ -38,13 +38,14 @@ Domain events and context boundaries: see [docs/bc-map.md](docs/bc-map.md).
 
 1. Beekeeper publishes slots of type `OnlineMasterclass` or `OfflineVisit`.
 2. Client requests a slot → `VisitBookingRequested`.
-3. Beekeeper confirms → `VisitBookingConfirmed`; both sides get a confirmation and a reminder before the slot.
+3. Beekeeper confirms → `VisitBookingConfirmed`; both sides get a confirmation.
+4. Shortly before the slot, a scheduled job publishes `VisitReminderTriggered`; both sides get a reminder.
 
 ### UC-4. Recurring billing via Monobank
 
 1. Subscriptions renew automatically each billing period using Monobank acquiring.
 2. Each charge goes through the same invoice → webhook → `PaymentSucceeded` / `PaymentFailed` flow as UC-1.
-3. After repeated failures the subscription is suspended; the client is notified before that happens.
+3. After repeated failures the subscription is suspended → `SubscriptionSuspended`; the client's included bookings are locked and the hive is no longer rented. The client is notified before that happens.
 4. Near season end, the client reserves their honey quota → `HoneyHarvestReserved`.
 
 ## 4. Non-functional requirements

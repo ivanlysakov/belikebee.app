@@ -17,7 +17,7 @@ Delivers messages to users. It holds no business rules of its own: it reacts to 
 - `UserRegistered` (from `identity`)
 - `PaymentSucceeded`, `PaymentFailed` (from `billing`)
 - `HiveLogEntryCreated` (from `apiary`)
-- `VisitBookingRequested`, `VisitBookingConfirmed` (from `scheduling`)
+- `VisitBookingRequested`, `VisitBookingConfirmed`, `VisitReminderTriggered` (from `scheduling`)
 
 ## Out of scope
 
