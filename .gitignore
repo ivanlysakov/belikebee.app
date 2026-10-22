@@ -1,5 +1,6 @@
 # Dependencies
 /node_modules
+/.pnpm-store
 
 # Next.js build output
 /.next/
@@ -15,6 +16,8 @@ next-env.d.ts
 
 # Tests
 /coverage
+/test-results
+/playwright-report
 
 # Logs
 npm-debug.log*
