@@ -1,0 +1,7 @@
+{
+  "home": {
+    "signedInAs": "Ви увійшли як <strong>{email}</strong> ({role})",
+    "signedOut": "<signIn>Увійдіть</signIn> або <signUp>створіть акаунт</signUp>."
+  },
+  "language": "Мова"
+}

@@ -39,7 +39,7 @@ describe("registration against PostgreSQL", () => {
     await register("taken@example.test");
     const state = await register("TAKEN@example.test");
 
-    expect(state).toEqual({ status: "error", fieldErrors: { email: ["An account with this email already exists."] } });
+    expect(state).toEqual({ status: "error", fieldErrors: { email: ["emailTaken"] } });
     await expect(prisma.user.count({ where: { email: "taken@example.test" } })).resolves.toBe(1);
   });
 

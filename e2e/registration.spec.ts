@@ -31,7 +31,7 @@ test("sign up, sign in, see the session, sign out", async ({ page }) => {
 
   await signIn(page, email);
   await expect(page).toHaveURL("/");
-  await expect(page.getByText(`Signed in as ${email} (BEEKEEPER)`)).toBeVisible();
+  await expect(page.getByText(`Signed in as ${email} (Beekeeper)`)).toBeVisible();
 
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL("/sign-in");

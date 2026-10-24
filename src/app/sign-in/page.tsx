@@ -1,15 +1,18 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { SignInForm } from "@/modules/identity";
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  const t = await getTranslations("identity.signIn");
+
   return (
     <>
-      <h1 className="text-2xl font-semibold">Sign in</h1>
+      <h1 className="text-2xl font-semibold">{t("title")}</h1>
       <SignInForm />
       <p className="text-sm text-muted-foreground">
-        No account yet?{" "}
+        {t("noAccount")}{" "}
         <Link href="/sign-up" className="underline">
-          Create one
+          {t("signUpLink")}
         </Link>
       </p>
     </>
