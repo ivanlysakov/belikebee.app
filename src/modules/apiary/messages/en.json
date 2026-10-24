@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "myApiaries": "My apiaries",
+    "allApiaries": "All apiaries"
+  },
+  "list": {
+    "title": "My apiaries",
+    "empty": "No apiaries yet.",
+    "hiveCount": "{count, plural, =0 {no hives} one {# hive} other {# hives}}"
+  },
+  "create": {
+    "title": "New apiary",
+    "name": "Name",
+    "location": "Location",
+    "submit": "Create apiary",
+    "submitting": "Creating…"
+  },
+  "hives": {
+    "title": "Hives",
+    "empty": "No hives yet."
+  },
+  "addHive": {
+    "title": "Add a hive",
+    "name": "Hive name",
+    "description": "Description (optional)",
+    "submit": "Add hive",
+    "submitting": "Adding…"
+  },
+  "errors": {
+    "signInRequired": "Sign in first.",
+    "beekeepersOnly": "Only beekeepers can manage apiaries.",
+    "apiaryNotFound": "This apiary was not found.",
+    "nameRequired": "Enter a name.",
+    "nameTooLong": "Use at most 100 characters.",
+    "locationRequired": "Enter the location.",
+    "locationTooLong": "Use at most 200 characters.",
+    "descriptionTooLong": "Use at most 1000 characters."
+  }
+}

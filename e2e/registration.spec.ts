@@ -1,27 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-const password = "correct horse battery";
-let counter = 0;
-
-function uniqueEmail() {
-  return `user-${Date.now()}-${counter++}@example.test`;
-}
-
-async function signUp(page: Page, email: string, role: "Client" | "Beekeeper" = "Client") {
-  await page.goto("/sign-up");
-  await page.getByLabel("Name").fill("Olena");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("radio", { name: new RegExp(role) }).check();
-  await page.getByRole("button", { name: "Create account" }).click();
-}
-
-async function signIn(page: Page, email: string, withPassword = password) {
-  await page.goto("/sign-in");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(withPassword);
-  await page.getByRole("button", { name: "Sign in" }).click();
-}
+import { expect, test } from "@playwright/test";
+import { signIn, signUp, uniqueEmail } from "./helpers";
 
 test("sign up, sign in, see the session, sign out", async ({ page }) => {
   const email = uniqueEmail();

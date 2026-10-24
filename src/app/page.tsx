@@ -18,6 +18,11 @@ export default async function HomePage() {
               strong: (chunks) => <strong>{chunks}</strong>,
             })}
           </p>
+          {session.user.role === "BEEKEEPER" && (
+            <Link href="/apiaries" className="underline">
+              {t("apiary.nav.myApiaries")}
+            </Link>
+          )}
           <SignOutButton />
         </>
       ) : (

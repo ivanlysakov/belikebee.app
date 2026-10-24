@@ -14,6 +14,6 @@ describe("messages", () => {
   });
 
   it("includes every module's namespace", () => {
-    expect(Object.keys(messages.uk).sort()).toEqual(["app", "identity"]);
+    expect(Object.keys(messages.uk).sort()).toEqual(["apiary", "app", "identity"]);
   });
 });
