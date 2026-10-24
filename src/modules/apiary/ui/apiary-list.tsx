@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ApiarySummary } from "../apiaries";
+import { Photo } from "./photo";
 
 export function ApiaryList({ apiaries }: { apiaries: ApiarySummary[] }) {
   const t = useTranslations("apiary.list");
@@ -10,6 +11,7 @@ export function ApiaryList({ apiaries }: { apiaries: ApiarySummary[] }) {
     <ul className="grid gap-3">
       {apiaries.map((apiary) => (
         <li key={apiary.id}>
+          <Photo url={apiary.photoUrl} alt={apiary.name} />
           <Link href={`/apiaries/${apiary.id}`} className="font-medium underline">
             {apiary.name}
           </Link>

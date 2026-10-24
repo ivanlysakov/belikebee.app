@@ -5,7 +5,7 @@ export function listApiaries(ownerId: string) {
   return prisma.apiary.findMany({
     where: { ownerId },
     orderBy: { createdAt: "asc" },
-    select: { id: true, name: true, location: true, _count: { select: { hives: true } } },
+    select: { id: true, name: true, location: true, photoUrl: true, _count: { select: { hives: true } } },
   });
 }
 
@@ -16,7 +16,7 @@ export function getApiary(ownerId: string, apiaryId: string) {
       id: true,
       name: true,
       location: true,
-      hives: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, description: true } },
+      hives: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, description: true, photoUrl: true } },
     },
   });
 }
@@ -28,7 +28,13 @@ export type HiveSummary = NonNullable<Awaited<ReturnType<typeof getApiary>>>["hi
 export function listPublicHives() {
   return prisma.hive.findMany({
     orderBy: { createdAt: "asc" },
-    select: { id: true, name: true, description: true, apiary: { select: { name: true, location: true } } },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      photoUrl: true,
+      apiary: { select: { name: true, location: true } },
+    },
   });
 }
 

@@ -36,10 +36,16 @@
     "locationRequired": "Enter the location.",
     "locationTooLong": "Use at most 200 characters.",
     "descriptionTooLong": "Use at most 1000 characters.",
-    "verificationPending": "An admin has to verify your beekeeper account before you can manage apiaries."
+    "verificationPending": "An admin has to verify your beekeeper account before you can manage apiaries.",
+    "photoInvalid": "Upload the photo again."
   },
   "browse": {
     "title": "All hives",
     "empty": "No hives on the platform yet."
+  },
+  "photo": {
+    "label": "Photo (optional)",
+    "uploading": "Uploading the photo…",
+    "failed": "The photo could not be uploaded. Try another file."
   }
 }

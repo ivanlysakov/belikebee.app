@@ -40,7 +40,7 @@ describe("addHiveAction", () => {
 
     expect(state).toEqual({ status: "success", hiveId: "hive_1" });
     expect(createHive).toHaveBeenCalledWith({
-      data: { apiaryId: "apiary_1", name: "Hive 3", description: "Carniolan colony" },
+      data: { apiaryId: "apiary_1", name: "Hive 3", description: "Carniolan colony", photoUrl: null },
       select: { id: true },
     });
     expect(publish).toHaveBeenCalledWith({
@@ -55,6 +55,19 @@ describe("addHiveAction", () => {
     await addHiveAction({ status: "idle" }, toFormData({ ...validInput, description: "  " }));
 
     expect(createHive.mock.calls[0][0].data.description).toBeNull();
+  });
+
+  it("saves a Vercel Blob photo address and rejects any other host", async () => {
+    const photoUrl = "https://store1.public.blob.vercel-storage.com/linden-abc123.jpg";
+    await addHiveAction({ status: "idle" }, toFormData({ ...validInput, photoUrl }));
+    const foreign = await addHiveAction(
+      { status: "idle" },
+      toFormData({ ...validInput, photoUrl: "http://store1.public.blob.vercel-storage.com/photo.jpg" }),
+    );
+
+    expect(createHive).toHaveBeenCalledTimes(1);
+    expect(createHive.mock.calls[0][0].data.photoUrl).toBe(photoUrl);
+    expect(foreign).toEqual({ status: "error", fieldErrors: { photoUrl: ["photoInvalid"] } });
   });
 
   it("treats another beekeeper's apiary like a missing one: no hive, no event", async () => {

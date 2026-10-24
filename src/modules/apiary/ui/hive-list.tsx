@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import type { HiveSummary } from "../apiaries";
+import { Photo } from "./photo";
 
 export function HiveList({ hives }: { hives: HiveSummary[] }) {
   const t = useTranslations("apiary.hives");
@@ -9,6 +10,7 @@ export function HiveList({ hives }: { hives: HiveSummary[] }) {
     <ul className="grid gap-3">
       {hives.map((hive) => (
         <li key={hive.id}>
+          <Photo url={hive.photoUrl} alt={hive.name} />
           <p className="font-medium">{hive.name}</p>
           {hive.description && <p className="text-sm text-muted-foreground">{hive.description}</p>}
         </li>

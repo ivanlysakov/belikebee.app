@@ -22,7 +22,7 @@ export async function createApiaryAction(_prev: CreateApiaryState, formData: For
 
   // The owner always comes from the session, never from the form.
   const apiary = await prisma.apiary.create({
-    data: { ownerId: access.userId, name: parsed.data.name, location: parsed.data.location },
+    data: { ...parsed.data, ownerId: access.userId },
     select: { id: true },
   });
 

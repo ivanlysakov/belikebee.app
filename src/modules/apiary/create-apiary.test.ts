@@ -36,10 +36,28 @@ describe("createApiaryAction", () => {
 
     expect(state).toEqual({ status: "success", apiaryId: "apiary_1" });
     expect(createApiary).toHaveBeenCalledWith({
-      data: { ownerId: "user_bee", name: "Linden Hill", location: "Vorzel, Bucha district" },
+      data: { ownerId: "user_bee", name: "Linden Hill", location: "Vorzel, Bucha district", photoUrl: null },
       select: { id: true },
     });
     expect(revalidatePath).toHaveBeenCalledWith("/apiaries");
+  });
+
+  it("saves the address of a photo uploaded to Vercel Blob", async () => {
+    const photoUrl = "https://store1.public.blob.vercel-storage.com/linden-abc123.jpg";
+
+    await createApiaryAction({ status: "idle" }, toFormData({ name: "A", location: "B", photoUrl }));
+
+    expect(createApiary.mock.calls[0][0].data.photoUrl).toBe(photoUrl);
+  });
+
+  it("rejects a photo address that is not on Vercel Blob", async () => {
+    const state = await createApiaryAction(
+      { status: "idle" },
+      toFormData({ name: "A", location: "B", photoUrl: "https://evil.example/blob.vercel-storage.com.jpg" }),
+    );
+
+    expect(state).toEqual({ status: "error", fieldErrors: { photoUrl: ["photoInvalid"] } });
+    expect(createApiary).not.toHaveBeenCalled();
   });
 
   it("returns translation keys for invalid input and writes nothing", async () => {

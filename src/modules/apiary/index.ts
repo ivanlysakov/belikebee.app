@@ -4,6 +4,7 @@ import uk from "./messages/uk.json";
 
 export { currentBeekeeper } from "./access";
 export { getApiary, listApiaries, listPublicHives } from "./apiaries";
+export { handlePhotoUpload } from "./photo-upload";
 export { AddHiveForm } from "./ui/add-hive-form";
 export { ApiaryList } from "./ui/apiary-list";
 export { CreateApiaryForm } from "./ui/create-apiary-form";

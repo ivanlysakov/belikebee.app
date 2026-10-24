@@ -5,6 +5,8 @@ model Apiary {
   ownerId   String
   name      String
   location  String
+  // Address of a photo on Vercel Blob; the browser uploads it, the action saves only the URL.
+  photoUrl  String?
   hives     Hive[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -18,6 +20,7 @@ model Hive {
   apiary      Apiary   @relation(fields: [apiaryId], references: [id], onDelete: Cascade)
   name        String
   description String?
+  photoUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

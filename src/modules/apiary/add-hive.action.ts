@@ -21,13 +21,13 @@ export async function addHiveAction(_prev: AddHiveState, formData: FormData): Pr
 
   const parsed = addHiveSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { status: "error", fieldErrors: z.flattenError(parsed.error).fieldErrors };
-  const { apiaryId, name, description } = parsed.data;
+  const { apiaryId, name, description, photoUrl } = parsed.data;
 
   // Another beekeeper's apiary answers exactly like a missing one, so apiary ids can't be probed.
   const apiary = await prisma.apiary.findUnique({ where: { id: apiaryId }, select: { ownerId: true } });
   if (!apiary || apiary.ownerId !== access.userId) return { status: "error", formError: "apiaryNotFound" };
 
-  const hive = await prisma.hive.create({ data: { apiaryId, name, description }, select: { id: true } });
+  const hive = await prisma.hive.create({ data: { apiaryId, name, description, photoUrl }, select: { id: true } });
 
   await publish({
     type: "HiveAddedToPlatform",

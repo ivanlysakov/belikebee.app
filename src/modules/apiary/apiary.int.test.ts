@@ -74,14 +74,18 @@ describe("apiaries and hives against PostgreSQL", () => {
     await expect(getApiary("bee_b", apiaryA)).resolves.toBeNull();
     await expect(listApiaries("bee_b")).resolves.toEqual([]);
     await expect(listApiaries("bee_a")).resolves.toEqual([
-      { id: apiaryA, name: "A's apiary", location: "Vorzel", _count: { hives: 0 } },
+      { id: apiaryA, name: "A's apiary", location: "Vorzel", photoUrl: null, _count: { hives: 0 } },
     ]);
   });
 
   it("lists every beekeeper's hives publicly, with their apiary but not its owner", async () => {
     signInAs("bee_public_1");
     const first = await createApiary("Public One");
-    await addHiveAction({ status: "idle" }, toFormData({ apiaryId: first, name: "Public hive 1", description: "Calm" }));
+    const photoUrl = "https://store1.public.blob.vercel-storage.com/hive-1.jpg";
+    await addHiveAction(
+      { status: "idle" },
+      toFormData({ apiaryId: first, name: "Public hive 1", description: "Calm", photoUrl }),
+    );
     signInAs("bee_public_2");
     const second = await createApiary("Public Two");
     await addHiveAction({ status: "idle" }, toFormData({ apiaryId: second, name: "Public hive 2" }));
@@ -93,12 +97,14 @@ describe("apiaries and hives against PostgreSQL", () => {
         id: expect.any(String),
         name: "Public hive 1",
         description: "Calm",
+        photoUrl,
         apiary: { name: "Public One", location: "Vorzel" },
       },
       {
         id: expect.any(String),
         name: "Public hive 2",
         description: null,
+        photoUrl: null,
         apiary: { name: "Public Two", location: "Vorzel" },
       },
     ]);
