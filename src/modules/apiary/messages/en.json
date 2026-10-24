@@ -1,7 +1,8 @@
 {
   "nav": {
     "myApiaries": "My apiaries",
-    "allApiaries": "All apiaries"
+    "allApiaries": "All apiaries",
+    "browseHives": "Browse hives"
   },
   "list": {
     "title": "My apiaries",
@@ -36,5 +37,9 @@
     "locationTooLong": "Use at most 200 characters.",
     "descriptionTooLong": "Use at most 1000 characters.",
     "verificationPending": "An admin has to verify your beekeeper account before you can manage apiaries."
+  },
+  "browse": {
+    "title": "All hives",
+    "empty": "No hives on the platform yet."
   }
 }

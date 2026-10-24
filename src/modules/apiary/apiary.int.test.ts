@@ -9,7 +9,7 @@ import type { DomainEvent } from "@/shared/events";
 import { prisma } from "@/shared/db/client";
 import { subscribe } from "@/shared/event-bus";
 import { addHiveAction } from "./add-hive.action";
-import { getApiary, listApiaries } from "./apiaries";
+import { getApiary, listApiaries, listPublicHives } from "./apiaries";
 import { createApiaryAction } from "./create-apiary.action";
 
 const events: DomainEvent[] = [];
@@ -75,6 +75,32 @@ describe("apiaries and hives against PostgreSQL", () => {
     await expect(listApiaries("bee_b")).resolves.toEqual([]);
     await expect(listApiaries("bee_a")).resolves.toEqual([
       { id: apiaryA, name: "A's apiary", location: "Vorzel", _count: { hives: 0 } },
+    ]);
+  });
+
+  it("lists every beekeeper's hives publicly, with their apiary but not its owner", async () => {
+    signInAs("bee_public_1");
+    const first = await createApiary("Public One");
+    await addHiveAction({ status: "idle" }, toFormData({ apiaryId: first, name: "Public hive 1", description: "Calm" }));
+    signInAs("bee_public_2");
+    const second = await createApiary("Public Two");
+    await addHiveAction({ status: "idle" }, toFormData({ apiaryId: second, name: "Public hive 2" }));
+
+    const hives = (await listPublicHives()).filter((hive) => hive.name.startsWith("Public hive"));
+
+    expect(hives).toEqual([
+      {
+        id: expect.any(String),
+        name: "Public hive 1",
+        description: "Calm",
+        apiary: { name: "Public One", location: "Vorzel" },
+      },
+      {
+        id: expect.any(String),
+        name: "Public hive 2",
+        description: null,
+        apiary: { name: "Public Two", location: "Vorzel" },
+      },
     ]);
   });
 

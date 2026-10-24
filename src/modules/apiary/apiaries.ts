@@ -23,3 +23,13 @@ export function getApiary(ownerId: string, apiaryId: string) {
 
 export type ApiarySummary = Awaited<ReturnType<typeof listApiaries>>[number];
 export type HiveSummary = NonNullable<Awaited<ReturnType<typeof getApiary>>>["hives"][number];
+
+// Public: anyone may browse every hive, so nothing about the owner is selected.
+export function listPublicHives() {
+  return prisma.hive.findMany({
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true, description: true, apiary: { select: { name: true, location: true } } },
+  });
+}
+
+export type PublicHive = Awaited<ReturnType<typeof listPublicHives>>[number];
