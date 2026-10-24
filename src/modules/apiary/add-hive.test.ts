@@ -1,17 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { findApiary, createHive, publish, getSession, revalidatePath } = vi.hoisted(() => ({
+const { findApiary, createHive, publish, getSession, isVerifiedBeekeeper, revalidatePath } = vi.hoisted(() => ({
   findApiary: vi.fn(),
   createHive: vi.fn(),
   publish: vi.fn(),
   getSession: vi.fn(),
+  isVerifiedBeekeeper: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 vi.mock("@/shared/db/client", () => ({
   prisma: { apiary: { findUnique: findApiary }, hive: { create: createHive } },
 }));
 vi.mock("@/shared/event-bus", () => ({ publish }));
-vi.mock("@/modules/identity", () => ({ getSession }));
+vi.mock("@/modules/identity", () => ({ getSession, isVerifiedBeekeeper }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
 import { addHiveAction } from "./add-hive.action";
@@ -29,6 +30,7 @@ describe("addHiveAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getSession.mockResolvedValue(beekeeper);
+    isVerifiedBeekeeper.mockResolvedValue(true);
     findApiary.mockResolvedValue({ ownerId: "user_bee" });
     createHive.mockResolvedValue({ id: "hive_1" });
   });

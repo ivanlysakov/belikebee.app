@@ -7,7 +7,7 @@ export default async function ApiaryPage({ params }: { params: Promise<{ id: str
   const access = await currentBeekeeper();
   if (access.status === "error" && access.formError === "signInRequired") redirect("/sign-in");
   const t = await getTranslations("apiary");
-  if (access.status === "error") return <p>{t("errors.beekeepersOnly")}</p>;
+  if (access.status === "error") return <p>{t(`errors.${access.formError}`)}</p>;
 
   // Another beekeeper's apiary is a 404, the same as a missing one.
   const apiary = await getApiary(access.userId, (await params).id);

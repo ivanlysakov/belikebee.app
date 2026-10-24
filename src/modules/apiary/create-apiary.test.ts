@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createApiary, getSession, revalidatePath } = vi.hoisted(() => ({
+const { createApiary, getSession, isVerifiedBeekeeper, revalidatePath } = vi.hoisted(() => ({
   createApiary: vi.fn(),
   getSession: vi.fn(),
+  isVerifiedBeekeeper: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 vi.mock("@/shared/db/client", () => ({ prisma: { apiary: { create: createApiary } } }));
-vi.mock("@/modules/identity", () => ({ getSession }));
+vi.mock("@/modules/identity", () => ({ getSession, isVerifiedBeekeeper }));
 vi.mock("next/cache", () => ({ revalidatePath }));
 
 import { createApiaryAction } from "./create-apiary.action";
@@ -23,6 +24,7 @@ describe("createApiaryAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getSession.mockResolvedValue(beekeeper);
+    isVerifiedBeekeeper.mockResolvedValue(true);
     createApiary.mockResolvedValue({ id: "apiary_1" });
   });
 
@@ -58,6 +60,16 @@ describe("createApiaryAction", () => {
 
     expect(signedOut).toEqual({ status: "error", formError: "signInRequired" });
     expect(client).toEqual({ status: "error", formError: "beekeepersOnly" });
+    expect(createApiary).not.toHaveBeenCalled();
+  });
+
+  it("refuses a beekeeper an admin has not verified yet", async () => {
+    isVerifiedBeekeeper.mockResolvedValueOnce(false);
+
+    const state = await createApiaryAction({ status: "idle" }, toFormData({ name: "A", location: "B" }));
+
+    expect(state).toEqual({ status: "error", formError: "verificationPending" });
+    expect(isVerifiedBeekeeper).toHaveBeenCalledWith("user_bee");
     expect(createApiary).not.toHaveBeenCalled();
   });
 });

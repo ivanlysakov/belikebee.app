@@ -7,13 +7,15 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(CLIENT)
-  profile      Profile?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  passwordHash        String
+  role                Role      @default(CLIENT)
+  // Set when an admin verifies a beekeeper; only verified beekeepers may manage apiaries.
+  beekeeperVerifiedAt DateTime?
+  profile             Profile?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model Profile {

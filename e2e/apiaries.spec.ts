@@ -1,16 +1,8 @@
-import { expect, test, type Page } from "@playwright/test";
-import { signIn, signUp, uniqueEmail } from "./helpers";
+import { expect, test } from "@playwright/test";
+import { signedInAs, verifyAsAdmin } from "./helpers";
 
-async function signedInAs(page: Page, role: "Client" | "Beekeeper") {
-  const email = uniqueEmail();
-  await signUp(page, email, role);
-  await expect(page.getByText("Account created.")).toBeVisible();
-  await signIn(page, email);
-  await expect(page).toHaveURL("/");
-}
-
-test("a beekeeper creates an apiary and adds a hive", async ({ page }) => {
-  await signedInAs(page, "Beekeeper");
+test("a verified beekeeper creates an apiary and adds a hive", async ({ browser, page }) => {
+  await verifyAsAdmin(browser, await signedInAs(page, "Beekeeper"));
 
   await page.getByRole("link", { name: "My apiaries" }).click();
   await expect(page).toHaveURL("/apiaries");

@@ -6,7 +6,7 @@ export default async function ApiariesPage() {
   const access = await currentBeekeeper();
   if (access.status === "error" && access.formError === "signInRequired") redirect("/sign-in");
   const t = await getTranslations("apiary");
-  if (access.status === "error") return <p>{t("errors.beekeepersOnly")}</p>;
+  if (access.status === "error") return <p>{t(`errors.${access.formError}`)}</p>;
 
   const apiaries = await listApiaries(access.userId);
 

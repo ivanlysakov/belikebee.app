@@ -37,5 +37,12 @@
     "nameRequired": "Enter your name.",
     "nameTooLong": "Use at most 100 characters.",
     "roleInvalid": "Choose Client or Beekeeper."
+  },
+  "admin": {
+    "link": "Verify beekeepers",
+    "title": "Beekeepers waiting for verification",
+    "empty": "No beekeepers are waiting.",
+    "verify": "Verify",
+    "adminsOnly": "Only admins can verify beekeepers."
   }
 }

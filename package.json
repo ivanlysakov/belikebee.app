@@ -11,6 +11,7 @@
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
+    "admin:promote": "tsx --env-file-if-exists=.env src/modules/identity/promote-admin.cli.ts",
     "postinstall": "prisma generate"
   },
   "packageManager": "pnpm@10.28.0",
@@ -35,6 +36,7 @@
     "@types/react-dom": "^19.3.0",
     "prisma": "7.10.1",
     "tailwindcss": "^4.3.3",
+    "tsx": "4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   }

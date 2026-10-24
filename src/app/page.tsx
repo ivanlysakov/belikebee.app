@@ -23,6 +23,11 @@ export default async function HomePage() {
               {t("apiary.nav.myApiaries")}
             </Link>
           )}
+          {session.user.role === "ADMIN" && (
+            <Link href="/admin/beekeepers" className="underline">
+              {t("identity.admin.link")}
+            </Link>
+          )}
           <SignOutButton />
         </>
       ) : (

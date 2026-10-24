@@ -1,8 +1,8 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-// Only the session and Next's cache are faked; Prisma, Postgres and the event bus are real.
+// Only the session, beekeeper verification (tested in identity) and Next's cache are faked; Prisma, Postgres and the event bus are real.
 const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }));
-vi.mock("@/modules/identity", () => ({ getSession }));
+vi.mock("@/modules/identity", () => ({ getSession, isVerifiedBeekeeper: async () => true }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import type { DomainEvent } from "@/shared/events";

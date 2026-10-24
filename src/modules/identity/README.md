@@ -8,6 +8,7 @@ Who the user is and what they are allowed to do. Every other context refers to u
 - **Role**: access level, one of `Client`, `Beekeeper`, `Admin`.
 - **Profile**: personal details, contact info (email, phone, Telegram handle), notification preferences.
 - Authentication: sign-up, sign-in, sessions (NextAuth).
+- Beekeeper verification: an admin verifies a beekeeper (`User.beekeeperVerifiedAt`) at `/admin/beekeepers`; the first admin is made with `pnpm admin:promote <email>`.
 
 ## Publishes
 
