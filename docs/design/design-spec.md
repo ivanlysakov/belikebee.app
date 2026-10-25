@@ -190,19 +190,19 @@ or visual impression is not evidence by itself.
 | ID | Covers | Layer | Pass condition | Evidence | Done |
 |---|---|---|---|---|---|
 | DOD-01 | BR-11 | Specification | Every Proposed row in section 14 is approved or replaced, and section 11 holds the final uk/en strings. | Section 11 and 14 statuses | [x] |
-| DOD-02 | BR-01, BR-13 | Specification / scope | `git diff --stat` touches only `src/app/page.tsx`, `src/app/messages/uk.json`, `src/app/messages/en.json`, `e2e/home.spec.ts` (plus `docs/` and `LOG.md`). `page.tsx` still imports only `next/link`, `next-intl/server`, `@/modules/identity`, `@/shared/ui/button`, and calls no data function besides `getSession()`. | `git diff --stat`; `grep -n "import\|await" src/app/page.tsx` | [ ] |
+| DOD-02 | BR-01, BR-13 | Specification / scope | `git diff --stat` touches only `src/app/page.tsx`, `src/app/messages/uk.json`, `src/app/messages/en.json`, `e2e/home.spec.ts` (plus `docs/` and `LOG.md`). `page.tsx` still imports only `next/link`, `next-intl/server`, `@/modules/identity`, `@/shared/ui/button`, and calls no data function besides `getSession()`. | `git diff --stat`; `grep -n "import\|await" src/app/page.tsx` | [x] |
 | DOD-03 | BR-02, BR-06 | Design structure | N/A — code-first: the screen is built directly from the existing design system, without a Figma or Pencil file. The four frames of section 7 are replaced by `verify-ui` screenshots of the live page, in the order of section 7. | `docs/design/first-screen/*.png` from the `verify-ui` run (also DOD-05, DOD-09) | [ ] |
-| DOD-04 | BR-05, BR-09 | Tokens and reuse | The diff adds no hex/oklch/rgb/palette-color class, no `text-[…]` size, no `font-serif`, no Alegreya import, and no change to `globals.css` or `package.json`. The page wrapper has class `theme-apiary`; the backdrop uses `bg-comb-cell wax-foundation`. | `git diff -- src/app/page.tsx \| grep -nE "#[0-9a-fA-F]{3,8}\|oklch\|text-\[\|font-serif\|alegreya"` returns nothing; `git diff --stat -- src/app/globals.css package.json pnpm-lock.yaml` empty | [ ] |
-| DOD-05 | BR-02 | Responsive / live | At 375×667 and 1440×900, as a guest in uk and in en, the `h1`, the lead, the "Browse hives" link, and the rental note each have `getBoundingClientRect().bottom ≤ window.innerHeight` and `scrollWidth ≤ clientWidth` on `html`. | Browser run + DOM measurements + 4 screenshots | [ ] |
-| DOD-06 | BR-03 | Behavior | On `/` there is exactly one `link` named "Browse hives" (en) / "Переглянути вулики" (uk); it has the `Button` classes (`bg-primary`, `h-10`); clicking it lands on `/hives`. | `e2e/home.spec.ts` (`toHaveCount(1)`, `toHaveURL("/hives")`); the class assertion fails against the current page before the change | [ ] |
-| DOD-07 | BR-04, BR-11 | Behavior / content | The guest sees the approved `h1` text and rental note in uk and en. No text "price"/"ціна" and no button or link named "Rent"/"Орендувати" on `/`. | `e2e/home.spec.ts`; browser run | [ ] |
-| DOD-08 | BR-07, BR-08, BR-14 | Behavior (preserved) | Guest, client, beekeeper, and admin each see the session block from section 8; links and sign-out behave as today; existing E2E specs pass unchanged. | `git diff --stat -- e2e/registration.spec.ts e2e/apiaries.spec.ts e2e/admin.spec.ts e2e/language.spec.ts e2e/helpers.ts` empty; `pnpm test:e2e` output | [ ] |
-| DOD-09 | BR-06 | States | For every role in section 8, the hero comes before the session block in the DOM, and an `hr` separates them. | Browser run: DOM order check per role; screenshots for guest and beekeeper | [ ] |
-| DOD-10 | BR-12 | Accessibility | `document.querySelectorAll("h1").length === 1`; the backdrop has `aria-hidden="true"`; Tab from page start reaches language buttons, then the primary link, then session links, then "Sign out"; the primary link shows a visible focus ring (computed `box-shadow` not `none` when focused). | Keyboard run + accessibility snapshot | [ ] |
-| DOD-11 | BR-12 | Accessibility / contrast | Computed `color` vs `--background` of the theme wrapper is ≥ 4.5:1 for the brand line, lead, rental note, and session text. | Computed styles + contrast calculation recorded in the verify report | [ ] |
-| DOD-12 | BR-10 | Deterministic gates | `pnpm test` passes, including `messages.test.ts` (uk/en key parity); `pnpm typecheck` and `pnpm build` pass. | Command output | [ ] |
-| DOD-13 | BR-03, BR-07, BR-08, BR-14 | Deterministic gates | `pnpm test:e2e` passes (all specs, including the new `e2e/home.spec.ts`), run outside the sandbox with Postgres up. | Command output | [ ] |
-| DOD-14 | BR-02, BR-03, BR-04, BR-05, BR-06, BR-07, BR-08, BR-12 | Live evidence | `verify-ui` reports PASS for DOD-05, -06, -07, -09, -10, -11 with expected vs actual evidence and screenshots. | `verify-ui` report + screenshots | [ ] |
+| DOD-04 | BR-05, BR-09 | Tokens and reuse | The diff adds no hex/oklch/rgb/palette-color class, no `text-[…]` size, no `font-serif`, no Alegreya import, and no change to `globals.css` or `package.json`. The page wrapper has class `theme-apiary`; the backdrop uses `bg-comb-cell wax-foundation`. | `git diff -- src/app/page.tsx \| grep -nE "#[0-9a-fA-F]{3,8}\|oklch\|text-\[\|font-serif\|alegreya"` returns nothing; `git diff --stat -- src/app/globals.css package.json pnpm-lock.yaml` empty | [x] |
+| DOD-05 | BR-02 | Responsive / live | At 375×667 and 1440×900, as a guest in uk and in en, the `h1`, the lead, the "Browse hives" link, and the rental note each have `getBoundingClientRect().bottom ≤ window.innerHeight` and `scrollWidth ≤ clientWidth` on `html`. | Browser run + DOM measurements + 4 screenshots | [x] |
+| DOD-06 | BR-03 | Behavior | On `/` there is exactly one `link` named "Browse hives" (en) / "Переглянути вулики" (uk); it has the `Button` classes (`bg-primary`, `h-10`); clicking it lands on `/hives`. | `e2e/home.spec.ts` (`toHaveCount(1)`, `toHaveURL("/hives")`); the class assertion fails against the current page before the change | [x] |
+| DOD-07 | BR-04, BR-11 | Behavior / content | The guest sees the approved `h1` text and rental note in uk and en. No text "price"/"ціна" and no button or link named "Rent"/"Орендувати" on `/`. | `e2e/home.spec.ts`; browser run | [x] |
+| DOD-08 | BR-07, BR-08, BR-14 | Behavior (preserved) | Guest, client, beekeeper, and admin each see the session block from section 8; links and sign-out behave as today; existing E2E specs pass unchanged. | `git diff --stat -- e2e/registration.spec.ts e2e/apiaries.spec.ts e2e/admin.spec.ts e2e/language.spec.ts e2e/helpers.ts` empty; `pnpm test:e2e` output | [x] |
+| DOD-09 | BR-06 | States | For every role in section 8, the hero comes before the session block in the DOM, and an `hr` separates them. | Browser run: DOM order check per role; screenshots for guest and beekeeper | [x] |
+| DOD-10 | BR-12 | Accessibility | `document.querySelectorAll("h1").length === 1`; the backdrop has `aria-hidden="true"`; Tab from page start reaches language buttons, then the primary link, then session links, then "Sign out"; the primary link shows a visible focus ring (computed `box-shadow` not `none` when focused). | Keyboard run + accessibility snapshot | [x] |
+| DOD-11 | BR-12 | Accessibility / contrast | Computed `color` vs `--background` of the theme wrapper is ≥ 4.5:1 for the brand line, lead, rental note, and session text. | Computed styles + contrast calculation recorded in the verify report | [x] |
+| DOD-12 | BR-10 | Deterministic gates | `pnpm test` passes, including `messages.test.ts` (uk/en key parity); `pnpm typecheck` and `pnpm build` pass. | Command output | [x] |
+| DOD-13 | BR-03, BR-07, BR-08, BR-14 | Deterministic gates | `pnpm test:e2e` passes (all specs, including the new `e2e/home.spec.ts`), run outside the sandbox with Postgres up. | Command output | [x] |
+| DOD-14 | BR-02, BR-03, BR-04, BR-05, BR-06, BR-07, BR-08, BR-12 | Live evidence | `verify-ui` reports PASS for DOD-05, -06, -07, -09, -10, -11 with expected vs actual evidence and screenshots. | `verify-ui` report + screenshots | [x] |
 
 ## 17. Requirement coverage
 
@@ -225,8 +225,8 @@ or visual impression is not evidence by itself.
 
 ## 18. Final gate
 
-- [ ] Every requirement is covered by at least one DoD row.
-- [ ] Every applicable DoD row is checked and links to evidence.
+- [x] Every requirement is covered by at least one DoD row.
+- [x] Every applicable DoD row is checked and links to evidence.
 - [x] Every `Proposed` decision (section 14) was approved or removed before implementation.
-- [ ] Deterministic checks and live browser verification both passed.
-- [ ] The final repository diff matches the approved scope.
+- [x] Deterministic checks and live browser verification both passed.
+- [x] The final repository diff matches the approved scope.
