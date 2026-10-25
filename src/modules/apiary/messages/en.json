@@ -47,5 +47,10 @@
     "label": "Photo (optional)",
     "uploading": "Uploading the photo…",
     "failed": "The photo could not be uploaded. Try another file."
+  },
+  "profile": {
+    "apiaryHives": "{count, plural, one {an apiary of # hive} other {an apiary of # hives}}",
+    "rentalTitle": "Renting opens together with plans",
+    "rentalBody": "Then this page will show the price and a button to rent this hive."
   }
 }

@@ -7,7 +7,7 @@ const photoTokenRequest = {
   data: { type: "blob.generate-client-token", payload: { pathname: "photo.jpg", clientPayload: null, multipart: false } },
 };
 
-test("a verified beekeeper adds a hive that anyone can see at /hives", async ({ browser, page }) => {
+test("a verified beekeeper adds a hive that anyone can see at /hives and on its own page", async ({ browser, page }) => {
   // /hives lists every test run's hives, so this one needs a name nobody else uses.
   const hiveName = `Hive ${randomUUID()}`;
   await verifyAsAdmin(browser, await signedInAs(page, "Beekeeper"));
@@ -40,7 +40,19 @@ test("a verified beekeeper adds a hive that anyone can see at /hives", async ({ 
   const hive = visitor.getByRole("listitem").filter({ hasText: hiveName });
   await expect(hive).toContainText("Linden Hill · Vorzel, Kyiv region");
   await expect(hive).toContainText("Carniolan bees");
+
+  await hive.getByRole("link", { name: hiveName }).click();
+  await expect(visitor.getByRole("heading", { level: 1, name: hiveName })).toBeVisible();
+  await expect(visitor.getByText("Vorzel, Kyiv region")).toBeVisible();
+  await expect(visitor.getByText("Carniolan bees")).toBeVisible();
+  await expect(visitor.getByText("Linden Hill")).toBeVisible();
+  await expect(visitor.getByText("an apiary of 1 hive")).toBeVisible();
+  await expect(visitor.getByRole("heading", { name: "Renting opens together with plans" })).toBeVisible();
   await visitor.close();
+});
+
+test("a hive that does not exist is a 404", async ({ page }) => {
+  expect((await page.goto("/hives/no-such-hive"))?.status()).toBe(404);
 });
 
 test("a client cannot manage apiaries or upload photos", async ({ page }) => {

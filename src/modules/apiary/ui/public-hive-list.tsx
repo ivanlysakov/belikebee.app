@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { PublicHive } from "../apiaries";
 import { Photo } from "./photo";
@@ -11,7 +12,9 @@ export function PublicHiveList({ hives }: { hives: PublicHive[] }) {
       {hives.map((hive) => (
         <li key={hive.id}>
           <Photo url={hive.photoUrl} alt={hive.name} />
-          <p className="font-medium">{hive.name}</p>
+          <Link href={`/hives/${hive.id}`} className="font-medium underline">
+            {hive.name}
+          </Link>
           <p className="type-muted">
             {hive.apiary.name} · {hive.apiary.location}
           </p>

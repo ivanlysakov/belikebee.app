@@ -9,7 +9,7 @@ import type { DomainEvent } from "@/shared/events";
 import { prisma } from "@/shared/db/client";
 import { subscribe } from "@/shared/event-bus";
 import { addHiveAction } from "./add-hive.action";
-import { getApiary, listApiaries, listPublicHives } from "./apiaries";
+import { getApiary, getPublicHive, listApiaries, listPublicHives } from "./apiaries";
 import { createApiaryAction } from "./create-apiary.action";
 
 const events: DomainEvent[] = [];
@@ -108,6 +108,23 @@ describe("apiaries and hives against PostgreSQL", () => {
         apiary: { name: "Public Two", location: "Vorzel" },
       },
     ]);
+  });
+
+  it("shows one hive publicly with its apiary and hive count, but not its owner", async () => {
+    signInAs("bee_profile");
+    const apiaryId = await createApiary("Profile Apiary");
+    await addHiveAction({ status: "idle" }, toFormData({ apiaryId, name: "Marta", description: "Calm family" }));
+    await addHiveAction({ status: "idle" }, toFormData({ apiaryId, name: "Second" }));
+    const hive = await prisma.hive.findFirstOrThrow({ where: { apiaryId, name: "Marta" } });
+
+    await expect(getPublicHive(hive.id)).resolves.toEqual({
+      id: hive.id,
+      name: "Marta",
+      description: "Calm family",
+      photoUrl: null,
+      apiary: { name: "Profile Apiary", location: "Vorzel", hiveCount: 2 },
+    });
+    await expect(getPublicHive("no-such-hive")).resolves.toBeNull();
   });
 
   it("deletes an apiary's hives with it (migration cascade)", async () => {
