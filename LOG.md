@@ -7,27 +7,7 @@
 
 ## F1 vs F2
 
-- **F1** (no plugin): `2ab9828` identity: registration, sign-in, sessions. Built with Claude Code before the plugin existed; the workflow came from CLAUDE.md and the prompts.
-- **F2** (with the plugin): `b04ca7b`, `eaf10c5`, `601cb57`, `43f1678`, `3ea3fe9` (i18n, apiaries and hives, beekeeper verification, public /hives, photos). Made with [belikebee-claude-plugin](https://github.com/ivanlysakov/belikebee-claude-plugin) 0.1.0, commands `/belikebee:feature-plan`, `/belikebee:feature-scaffold`, `/belikebee:feature-ship`, the `belikebee:pattern-scout` agent and the module-boundary hook.
-- Source: the Claude Code session transcript (F1 on 2026-10-22 18:52–19:51, F2 on 2026-10-24 18:52–20:27, +0300) and the lines above.
+Full comparison in stage-3 metrics, hook records and the plugin changes: [CAPSTONE_LOG.md](CAPSTONE_LOG.md).
 
-| Metric | F1 | F2 total (5 commits) | F2 per commit |
-| --- | --- | --- | --- |
-| First prompt → commit | 59 min | 95 min | ≈19 min |
-| User prompts | 6 | 19 | ≈4 |
-| Repeated "how to work" prompts | 0 | 0 | 0 |
-| Decision rounds (questions) | 3 (7) | 3 (7), two of them in the one plan that drove all 5 commits | |
-| Claude tool calls | 160 | 271 | ≈54 |
-| Output tokens | 94k | 198k | ≈40k |
-| Lines added (no lockfile, no migrations) | 1057 | 1941 | ≈390 |
-| Tests at the end (unit / integration / E2E) | 10 / 3 / 3 | 36 / 9 / 11 | |
-| Test runs that failed first, as intended | 2 | 5 | 1 |
-| Deliberate-break runs | 5 | 10 | 2 |
-| Plugin calls | 0 | plan 1, pattern-scout 1, scaffold 3, ship 5, tests 0 | |
-| Hook blocks | n/a | 0 | |
-| Bugs the tests missed, found by the user | 0 | 2 (import cycle only in `next dev`, 601cb57; Blob upload hang on a private store, 3ea3fe9) | |
-
-- Per commit, F2 took about a third of F1's time and tool calls. F1 also carried one-off setup (Prisma config, the Postgres service, Playwright install, sandbox and `.env` issues), so the real gain is smaller than 3x.
-- What the plugin changed: one plan round, approved with one word, drove 5 commits that each started with "go next", and no workflow instructions had to be repeated. The ship step re-ran E2E and caught a flaky test (3/32 with `--repeat-each=4`) before the commit.
-- What it did not change: test-first, deliberate breaks and the LOG line already happened in F1 because CLAUDE.md asks for them; the plugin made them routine. `feature-tests` was never used, `feature-scaffold` was skipped for the last two slices, and the hook never fired, so it is unproven in practice.
-- The two costliest F2 problems were found by the user in the browser, not by tests. Next step for the plugin: a `next dev` smoke check at the end of `feature-scaffold`.
+- **F1** `2ab9828` (no plugin): 58 min from the first prompt to all suites green, 6 free prompts, 160 tool calls.
+- **F2** `eaf10c5` (belikebee plugin: `/belikebee:feature-plan`, `/belikebee:feature-scaffold`, `/belikebee:feature-ship`): 9 min to all suites green (20 min with the shared plan), 2 free prompts, 51 tool calls. Four more slices followed with the same plugin (`b04ca7b`, `601cb57`, `43f1678`, `3ea3fe9`).
