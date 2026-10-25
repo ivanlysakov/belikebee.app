@@ -53,8 +53,8 @@ export function PhotoField({ id, errors, apiaryId, onUploadingChange }: Props) {
     <Field id={id} label={t("label")} errors={errors}>
       <Input id={id} type="file" accept="image/jpeg,image/png,image/webp" onChange={onChange} />
       <input type="hidden" name="photoUrl" value={url} />
-      {status === "uploading" && <p className="text-sm text-muted-foreground">{t("uploading")}</p>}
-      {status === "failed" && <p className="text-sm text-destructive">{t("failed")}</p>}
+      {status === "uploading" && <p className="type-muted">{t("uploading")}</p>}
+      {status === "failed" && <p className="type-error">{t("failed")}</p>}
     </Field>
   );
 }

@@ -5,7 +5,7 @@ import { Photo } from "./photo";
 
 export function ApiaryList({ apiaries }: { apiaries: ApiarySummary[] }) {
   const t = useTranslations("apiary.list");
-  if (apiaries.length === 0) return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
+  if (apiaries.length === 0) return <p className="type-muted">{t("empty")}</p>;
 
   return (
     <ul className="grid gap-3">
@@ -15,7 +15,7 @@ export function ApiaryList({ apiaries }: { apiaries: ApiarySummary[] }) {
           <Link href={`/apiaries/${apiary.id}`} className="font-medium underline">
             {apiary.name}
           </Link>
-          <p className="text-sm text-muted-foreground">
+          <p className="type-muted">
             {apiary.location} · {t("hiveCount", { count: apiary._count.hives })}
           </p>
         </li>

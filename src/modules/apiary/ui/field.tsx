@@ -9,7 +9,7 @@ export type ErrorKey = Parameters<ReturnType<typeof useTranslations<"apiary.erro
 
 export function FormError({ error }: { error?: string }) {
   const t = useTranslations("apiary.errors");
-  return error ? <p className="text-sm text-destructive">{t(error as ErrorKey)}</p> : null;
+  return error ? <p className="type-error">{t(error as ErrorKey)}</p> : null;
 }
 
 export function Field({ id, label, errors, children }: { id: string; label: string; errors?: string[]; children: ReactNode }) {

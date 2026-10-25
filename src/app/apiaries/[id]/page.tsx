@@ -19,12 +19,12 @@ export default async function ApiaryPage({ params }: { params: Promise<{ id: str
         {t("nav.allApiaries")}
       </Link>
       <div>
-        <h1 className="text-2xl font-semibold">{apiary.name}</h1>
-        <p className="text-sm text-muted-foreground">{apiary.location}</p>
+        <h1 className="type-title">{apiary.name}</h1>
+        <p className="type-muted">{apiary.location}</p>
       </div>
-      <h2 className="text-lg font-semibold">{t("hives.title")}</h2>
+      <h2 className="type-section">{t("hives.title")}</h2>
       <HiveList hives={apiary.hives} />
-      <h2 className="text-lg font-semibold">{t("addHive.title")}</h2>
+      <h2 className="type-section">{t("addHive.title")}</h2>
       <AddHiveForm apiaryId={apiary.id} />
     </>
   );

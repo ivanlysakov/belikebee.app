@@ -10,7 +10,7 @@ export default async function AdminBeekeepersPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <h1 className="type-title">{t("title")}</h1>
       <BeekeeperVerificationList beekeepers={await listUnverifiedBeekeepers()} />
     </>
   );

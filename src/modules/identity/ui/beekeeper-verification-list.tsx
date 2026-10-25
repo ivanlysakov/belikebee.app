@@ -5,7 +5,7 @@ import { verifyBeekeeperAction } from "../verify-beekeeper.action";
 
 export function BeekeeperVerificationList({ beekeepers }: { beekeepers: UnverifiedBeekeeper[] }) {
   const t = useTranslations("identity.admin");
-  if (beekeepers.length === 0) return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
+  if (beekeepers.length === 0) return <p className="type-muted">{t("empty")}</p>;
 
   return (
     <ul className="grid gap-3">
@@ -13,7 +13,7 @@ export function BeekeeperVerificationList({ beekeepers }: { beekeepers: Unverifi
         <li key={beekeeper.id} className="flex items-center justify-between gap-4">
           <div>
             <p className="font-medium">{beekeeper.profile?.name}</p>
-            <p className="text-sm text-muted-foreground">{beekeeper.email}</p>
+            <p className="type-muted">{beekeeper.email}</p>
           </div>
           <form action={verifyBeekeeperAction}>
             <input type="hidden" name="userId" value={beekeeper.id} />

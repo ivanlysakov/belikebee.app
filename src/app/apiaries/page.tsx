@@ -12,9 +12,9 @@ export default async function ApiariesPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("list.title")}</h1>
+      <h1 className="type-title">{t("list.title")}</h1>
       <ApiaryList apiaries={apiaries} />
-      <h2 className="text-lg font-semibold">{t("create.title")}</h2>
+      <h2 className="type-section">{t("create.title")}</h2>
       <CreateApiaryForm />
     </>
   );

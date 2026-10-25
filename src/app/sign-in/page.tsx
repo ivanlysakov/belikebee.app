@@ -7,9 +7,9 @@ export default async function SignInPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <h1 className="type-title">{t("title")}</h1>
       <SignInForm />
-      <p className="text-sm text-muted-foreground">
+      <p className="type-muted">
         {t("noAccount")}{" "}
         <Link href="/sign-up" className="underline">
           {t("signUpLink")}

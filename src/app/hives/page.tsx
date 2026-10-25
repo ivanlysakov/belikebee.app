@@ -7,7 +7,7 @@ export default async function HivesPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">{t("title")}</h1>
+      <h1 className="type-title">{t("title")}</h1>
       <PublicHiveList hives={await listPublicHives()} />
     </>
   );

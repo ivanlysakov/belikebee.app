@@ -4,7 +4,7 @@ import { Photo } from "./photo";
 
 export function HiveList({ hives }: { hives: HiveSummary[] }) {
   const t = useTranslations("apiary.hives");
-  if (hives.length === 0) return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
+  if (hives.length === 0) return <p className="type-muted">{t("empty")}</p>;
 
   return (
     <ul className="grid gap-3">
@@ -12,7 +12,7 @@ export function HiveList({ hives }: { hives: HiveSummary[] }) {
         <li key={hive.id}>
           <Photo url={hive.photoUrl} alt={hive.name} />
           <p className="font-medium">{hive.name}</p>
-          {hive.description && <p className="text-sm text-muted-foreground">{hive.description}</p>}
+          {hive.description && <p className="type-muted">{hive.description}</p>}
         </li>
       ))}
     </ul>

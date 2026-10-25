@@ -30,7 +30,7 @@ export function SignInForm() {
         <Label htmlFor="password">{t("password")}</Label>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="type-error">{error}</p>}
       <Button type="submit" disabled={pending}>
         {pending ? t("submitting") : t("submit")}
       </Button>

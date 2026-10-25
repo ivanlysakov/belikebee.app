@@ -8,7 +8,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold">BeLikeBee</h1>
+      <h1 className="type-title">BeLikeBee</h1>
       <Link href="/hives" className="underline">
         {t("apiary.nav.browseHives")}
       </Link>

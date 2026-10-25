@@ -19,7 +19,7 @@ function Field({ id, label, errors, children }: { id: string; label: string; err
       <Label htmlFor={id}>{label}</Label>
       {children}
       {errors?.map((error) => (
-        <p key={error} className="text-sm text-destructive">
+        <p key={error} className="type-error">
           {tErrors(error as ErrorKey)}
         </p>
       ))}
@@ -73,7 +73,7 @@ export function SignUpForm() {
           <input type="radio" name="role" value="BEEKEEPER" /> {t("roleBeekeeper")}
         </label>
         {errors.role?.map((error) => (
-          <p key={error} className="text-sm text-destructive">
+          <p key={error} className="type-error">
             {tErrors(error as ErrorKey)}
           </p>
         ))}
