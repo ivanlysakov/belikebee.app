@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { getSession, SignOutButton } from "@/modules/identity";
 
 export default async function HomePage() {
   const session = await getSession();
+  const t = await getTranslations();
 
   return (
     <>
@@ -10,20 +12,33 @@ export default async function HomePage() {
       {session ? (
         <>
           <p>
-            Signed in as <strong>{session.user.email}</strong> ({session.user.role})
+            {t.rich("app.home.signedInAs", {
+              email: session.user.email ?? "",
+              role: t(`identity.roles.${session.user.role}`),
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
+          {session.user.role === "BEEKEEPER" && (
+            <Link href="/apiaries" className="underline">
+              {t("apiary.nav.myApiaries")}
+            </Link>
+          )}
           <SignOutButton />
         </>
       ) : (
         <p>
-          <Link href="/sign-in" className="underline">
-            Sign in
-          </Link>{" "}
-          or{" "}
-          <Link href="/sign-up" className="underline">
-            create an account
-          </Link>
-          .
+          {t.rich("app.home.signedOut", {
+            signIn: (chunks) => (
+              <Link href="/sign-in" className="underline">
+                {chunks}
+              </Link>
+            ),
+            signUp: (chunks) => (
+              <Link href="/sign-up" className="underline">
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       )}
     </>

@@ -1,0 +1,7 @@
+{
+  "home": {
+    "signedInAs": "Signed in as <strong>{email}</strong> ({role})",
+    "signedOut": "<signIn>Sign in</signIn> or <signUp>create an account</signUp>."
+  },
+  "language": "Language"
+}

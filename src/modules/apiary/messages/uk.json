@@ -1,0 +1,39 @@
+{
+  "nav": {
+    "myApiaries": "Мої пасіки",
+    "allApiaries": "Усі пасіки"
+  },
+  "list": {
+    "title": "Мої пасіки",
+    "empty": "Пасік ще немає.",
+    "hiveCount": "{count, plural, =0 {немає вуликів} one {# вулик} few {# вулики} many {# вуликів} other {# вулика}}"
+  },
+  "create": {
+    "title": "Нова пасіка",
+    "name": "Назва",
+    "location": "Розташування",
+    "submit": "Створити пасіку",
+    "submitting": "Створюємо…"
+  },
+  "hives": {
+    "title": "Вулики",
+    "empty": "Вуликів ще немає."
+  },
+  "addHive": {
+    "title": "Додати вулик",
+    "name": "Назва вулика",
+    "description": "Опис (необовʼязково)",
+    "submit": "Додати вулик",
+    "submitting": "Додаємо…"
+  },
+  "errors": {
+    "signInRequired": "Спершу увійдіть.",
+    "beekeepersOnly": "Керувати пасіками можуть лише пасічники.",
+    "apiaryNotFound": "Пасіку не знайдено.",
+    "nameRequired": "Введіть назву.",
+    "nameTooLong": "Щонайбільше 100 символів.",
+    "locationRequired": "Вкажіть розташування.",
+    "locationTooLong": "Щонайбільше 200 символів.",
+    "descriptionTooLong": "Щонайбільше 1000 символів."
+  }
+}

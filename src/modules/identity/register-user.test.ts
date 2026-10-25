@@ -36,10 +36,14 @@ describe("registerUserSchema", () => {
     expect(registerUserSchema.safeParse({ ...validInput, role: "ADMIN" }).success).toBe(false);
   });
 
-  it("rejects an invalid email, a short password and an empty name", () => {
+  it("rejects an invalid email, a short password and an empty name with translation keys", () => {
     const result = registerUserSchema.safeParse({ ...validInput, email: "nope", password: "short", name: "  " });
     expect(result.success).toBe(false);
-    expect(result.error?.issues.map((issue) => issue.path[0])).toEqual(["email", "password", "name"]);
+    expect(result.error?.issues.map((issue) => [issue.path[0], issue.message])).toEqual([
+      ["email", "emailInvalid"],
+      ["password", "passwordTooShort"],
+      ["name", "nameRequired"],
+    ]);
   });
 });
 
@@ -67,7 +71,7 @@ describe("registerUserAction", () => {
   it("returns field errors and writes nothing when input is invalid", async () => {
     const state = await registerUserAction({ status: "idle" }, toFormData({ ...validInput, email: "nope" }));
 
-    expect(state).toEqual({ status: "error", fieldErrors: { email: [expect.any(String)] } });
+    expect(state).toEqual({ status: "error", fieldErrors: { email: ["emailInvalid"] } });
     expect(createUser).not.toHaveBeenCalled();
     expect(publish).not.toHaveBeenCalled();
   });
@@ -79,7 +83,7 @@ describe("registerUserAction", () => {
 
     const state = await registerUserAction({ status: "idle" }, toFormData(validInput));
 
-    expect(state).toEqual({ status: "error", fieldErrors: { email: ["An account with this email already exists."] } });
+    expect(state).toEqual({ status: "error", fieldErrors: { email: ["emailTaken"] } });
     expect(publish).not.toHaveBeenCalled();
   });
 });

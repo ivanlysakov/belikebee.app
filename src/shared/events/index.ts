@@ -6,4 +6,10 @@ export type UserRegistered = {
   occurredAt: Date;
 };
 
-export type DomainEvent = UserRegistered;
+export type HiveAddedToPlatform = {
+  type: "HiveAddedToPlatform";
+  payload: { hiveId: string; apiaryId: string; ownerId: string };
+  occurredAt: Date;
+};
+
+export type DomainEvent = UserRegistered | HiveAddedToPlatform;

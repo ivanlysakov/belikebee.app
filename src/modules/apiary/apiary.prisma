@@ -1,0 +1,25 @@
+// Owned by the apiary module. Owners are identity users, referred to only by `ownerId` (no relation to User).
+
+model Apiary {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  location  String
+  hives     Hive[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model Hive {
+  id          String   @id @default(cuid())
+  apiaryId    String
+  apiary      Apiary   @relation(fields: [apiaryId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([apiaryId])
+}

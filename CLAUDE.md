@@ -6,9 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-No application code yet. The stack is decided in `docs/adr/0001-initial-setup.md`: Next.js (App Router, TypeScript), PostgreSQL + Prisma, Tailwind CSS + shadcn/ui, Zod, NextAuth v4, Monobank acquiring; package manager is pnpm (`Makefile`). There is no `package.json` yet, so `make dev` and `make test` fail until the app is scaffolded. The test runner is undecided; don't assume one. Product scope is in `SPEC.md`, context boundaries in `docs/bc-map.md` and each `src/modules/<name>/README.md`.
+The stack is decided in `docs/adr/0001-initial-setup.md`: Next.js (App Router, TypeScript), PostgreSQL + Prisma, Tailwind CSS + shadcn/ui, Zod, NextAuth v4, Monobank acquiring; package manager is pnpm. Product scope is in `SPEC.md`, context boundaries in `docs/bc-map.md` and each `src/modules/<name>/README.md`.
 
-What else exists is the Claude Code sandbox setup: `.claude/settings.json` and a devcontainer in `.devcontainer/` (also reachable via `docker compose up` from the root).
+Only `identity` has code (registration, sign-in, sessions); the other modules have a README only. Prisma models live in `src/modules/<name>/<name>.prisma`, migrations in `src/shared/db/migrations/`. Postgres for development is the `postgres` service in `docker compose`.
+
+Tests: Vitest for unit (`pnpm test`, `*.test.ts`, mocked) and integration (`pnpm test:int`, `*.int.test.ts`, real `belikebee_test` database); Playwright for E2E (`pnpm test:e2e`, production build on port 3100). Integration and E2E need Postgres up and run outside the sandbox. `make dev` and `make test` wrap `pnpm dev` and `pnpm test`.
+
+Claude Code setup: `.claude/settings.json` enables the `belikebee` plugin (separate repo `belikebee-claude-plugin`), which provides the skills `/belikebee:feature-plan`, `/belikebee:feature-scaffold`, `/belikebee:feature-tests`, `/belikebee:feature-ship`, the `belikebee:pattern-scout` subagent, and a PreToolUse hook that blocks module-boundary violations. Change them in the plugin repo, not here. `.claude/hooks/test-changed-modules.sh` exists but is not registered. A devcontainer is in `.devcontainer/` (also reachable via `docker compose up` from the root).
 
 Claude runs on the macOS host, under the sandbox and permissions in `.claude/settings.json`. The devcontainer is the alternative runtime, not the default.
 
@@ -23,6 +27,7 @@ Claude runs on the macOS host, under the sandbox and permissions in `.claude/set
 ## Workflow
 
 - Commit on `dev`; PRs go `dev` → `main`. `git push` is denied for Claude; the user pushes.
+- After each commit that touches `src/modules/`, append one line to `LOG.md` in the repo root (create it if missing): `<timestamp> | <short description> | repeated prompts: "<verbatim>" | manual checks: <tests, migration check, lint> | stumbles: <errors, rollbacks, rework> | time: <first prompt → green test>`. Timestamp is ISO 8601 with offset (`date +%Y-%m-%dT%H:%M:%S%z`). Write `none` for an empty field.
 - Write code comments and docs in English.
 
 ## Architecture

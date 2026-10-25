@@ -1,0 +1,41 @@
+{
+  "signUp": {
+    "title": "Створити акаунт",
+    "name": "Імʼя",
+    "email": "Електронна пошта",
+    "password": "Пароль",
+    "roleLegend": "Я —",
+    "roleClient": "Клієнт: хочу орендувати вулик",
+    "roleBeekeeper": "Пасічник: маю пасіку",
+    "submit": "Створити акаунт",
+    "submitting": "Створюємо акаунт…",
+    "success": "Акаунт створено.",
+    "haveAccount": "Уже зареєстровані?",
+    "signInLink": "Увійти"
+  },
+  "signIn": {
+    "title": "Вхід",
+    "email": "Електронна пошта",
+    "password": "Пароль",
+    "submit": "Увійти",
+    "submitting": "Входимо…",
+    "wrongCredentials": "Неправильна пошта або пароль.",
+    "noAccount": "Ще немає акаунта?",
+    "signUpLink": "Створіть його"
+  },
+  "signOut": "Вийти",
+  "roles": {
+    "CLIENT": "Клієнт",
+    "BEEKEEPER": "Пасічник",
+    "ADMIN": "Адміністратор"
+  },
+  "errors": {
+    "emailInvalid": "Введіть коректну адресу пошти.",
+    "emailTaken": "Акаунт із цією поштою вже існує.",
+    "passwordTooShort": "Щонайменше 8 символів.",
+    "passwordTooLong": "Щонайбільше 128 символів.",
+    "nameRequired": "Введіть імʼя.",
+    "nameTooLong": "Щонайбільше 100 символів.",
+    "roleInvalid": "Оберіть «Клієнт» або «Пасічник»."
+  }
+}

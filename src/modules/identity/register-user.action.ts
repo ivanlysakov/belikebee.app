@@ -28,7 +28,7 @@ export async function registerUserAction(_prev: RegisterUserState, formData: For
   } catch (error) {
     // P2002: unique constraint violation; the only one a new user can hit is User.email.
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { status: "error", fieldErrors: { email: ["An account with this email already exists."] } };
+      return { status: "error", fieldErrors: { email: ["emailTaken"] } };
     }
     throw error;
   }

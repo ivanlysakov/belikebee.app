@@ -25,7 +25,6 @@
       "Read(.env.*)",
       "Read(**/.env)",
       "Read(**/.env.*)",
-      "Read(**/credentials*)",
       "Read(**/*.pem)",
       "Read(**/*.key)",
       "Read(~/.ssh/**)"
@@ -43,7 +42,8 @@
         "github.com",
         "api.github.com",
         "api.anthropic.com",
-        "statsig.anthropic.com"
+        "statsig.anthropic.com",
+        "binaries.prisma.sh"
       ],
       "allowManagedDomainsOnly": false
     },
@@ -52,5 +52,13 @@
   },
   "worktree": {
     "symlinkDirectories": ["node_modules", ".cache"]
+  },
+  "extraKnownMarketplaces": {
+    "belikebee-plugins": {
+      "source": { "source": "github", "repo": "ivanlysakov/belikebee-claude-plugin" }
+    }
+  },
+  "enabledPlugins": {
+    "belikebee@belikebee-plugins": true
   }
 }
