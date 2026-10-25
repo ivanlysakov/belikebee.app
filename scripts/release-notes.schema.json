@@ -1,0 +1,42 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["from", "to", "summary", "entries", "skipped"],
+  "properties": {
+    "from": { "type": "string", "description": "Start ref of the range (tag or commit)" },
+    "to": { "type": "string", "description": "End ref of the range, usually HEAD" },
+    "summary": { "type": "string", "minLength": 1, "description": "One or two sentences on what this release brings" },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "module", "text", "commits"],
+        "properties": {
+          "category": { "enum": ["Added", "Changed", "Fixed", "Internal"] },
+          "module": { "enum": ["identity", "apiary", "billing", "scheduling", "notifications", "shared", "tooling"] },
+          "text": { "type": "string", "minLength": 1, "description": "The bullet as written in docs/CHANGELOG.md, without the hashes" },
+          "commits": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" }
+          }
+        }
+      }
+    },
+    "skipped": {
+      "type": "array",
+      "description": "Commits with nothing worth a release note",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["commit", "reason"],
+        "properties": {
+          "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
