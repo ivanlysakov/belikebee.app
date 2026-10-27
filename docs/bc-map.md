@@ -40,14 +40,15 @@ The system is divided into **5 Bounded Contexts** (4 core contexts plus the Noti
 - **Apiary** — Physical location hosting a group of hives, owned by a Beekeeper.
 - **Digital Twin / Hive** — A specific physical hive assigned a QR code, history, and characteristics.
 - **Hive Log** — A status report added by the beekeeper (frames, health checks, treatments).
-- **Work Order** — A request or directive from a client for specific hive maintenance tasks.
+- **Work Order** — A client's request for a specific task on their rented hive, which the beekeeper may accept or decline.
 
 ### 3. Billing & Subscription Context
 
-- **Subscription** — An active hive rental agreement held by a client.
+- **Subscription** — A client's paid agreement on a chosen plan, renewed and charged each billing period.
 - **Plan / Tariff** — Pricing tiers and service levels (e.g., _Basic_, _Premium + Honey_).
 - **Invoice / Payment** — Financial transaction entities integrated with Monobank.
-- **Honey Reserve / Quota** — The allocated weight of raw honey guaranteed to the client at harvest.
+- **Honey Quota** — The weight of raw honey, set by the client's plan, guaranteed to the client at season end regardless of the hive's actual harvest.
+- **Honey Reservation** — The client's confirmation near season end that they will take their honey quota.
 
 ### 4. Scheduling & Visits Context
 

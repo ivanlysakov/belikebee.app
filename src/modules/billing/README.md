@@ -5,9 +5,10 @@ Money: what a client pays for, how much, and whether the payment went through. T
 ## Owns
 
 - **Plan / Tariff**: pricing tiers and service levels (e.g., _Basic_, _Premium + Honey_).
-- **Subscription**: a client's active hive rental agreement and its renewal cycle.
+- **Subscription**: a client's paid agreement on a chosen plan and its renewal cycle.
 - **Invoice / Payment**: financial transactions created and confirmed through the Monobank API.
-- **Honey Reserve / Quota**: the weight of raw honey guaranteed to the client at harvest.
+- **Honey Quota**: the weight of raw honey, set by the client's plan, guaranteed to the client at season end regardless of the hive's actual harvest.
+- **Honey Reservation**: the client's confirmation near season end that they will take their honey quota.
 - The Monobank API client and webhook handling: verify the `X-Sign` header (ECDSA signature of the raw request body) with the public key from `GET /api/merchant/pubkey`, and process each status change once, since Monobank retries delivery.
 
 ## Publishes

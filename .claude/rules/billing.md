@@ -9,7 +9,7 @@ Full description: `src/modules/billing/README.md`. These rules apply to every fi
 
 ## Owns
 
-- Prisma models for Plan, Subscription, Invoice/Payment, and Honey Reserve/Quota.
+- Prisma models for Plan, Subscription, Invoice/Payment, Honey Quota, and Honey Reservation.
 - The Monobank client. No other module calls Monobank.
 - Its public API is `src/modules/billing/index.ts`. Export only what other code needs today.
 

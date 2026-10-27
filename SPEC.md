@@ -2,7 +2,7 @@
 
 ## 1. Product vision
 
-BeLikeBee.app is a B2B2C remote beekeeping SaaS. City residents rent a real hive at a countryside apiary, follow it through a digital twin, visit it online or in person, and receive raw honey from it at the end of the season. Beekeepers get a CRM for their apiary and recurring revenue paid up front, before the harvest.
+BeLikeBee.app is a B2B2C remote beekeeping SaaS. City residents rent a real hive at a countryside apiary, follow it through a digital twin, visit it online or in person, and receive a guaranteed quota of raw honey at the end of the season. Beekeepers get a CRM for their apiary and recurring revenue paid up front, before the harvest.
 
 - **B2C**: urban professionals, eco-conscious families, gift buyers.
 - **B2B**: independent beekeepers who want to digitize operations and smooth early-season cash flow.

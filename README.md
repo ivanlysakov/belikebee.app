@@ -8,7 +8,7 @@ City dwellers long for an authentic connection to nature, eco-friendly habits, a
 The Solution
 BeLikeBee.app is a B2B2C remote farming platform and SaaS ecosystem connecting urban nature lovers with local beekeepers.
 
-For Customers (Remote Beekeepers): Rent or adopt a dedicated hive in the countryside. Track its lifecycle in real time via a digital twin, order specific hive tasks, book live online workshops or hands-on apiary visits, and receive a guaranteed harvest of custom-branded, raw honey at the end of the season.
+For Customers (Remote Beekeepers): Rent or adopt a dedicated hive in the countryside. Track its lifecycle in real time via a digital twin, order specific hive tasks, book live online workshops or hands-on apiary visits, and receive a guaranteed quota of custom-branded, raw honey at the end of the season.
 
 For Beekeepers (Apiary Management SaaS): A modern CRM to digitize apiary operations, secure upfront recurring revenue (subscriptions) before the harvest, and manage client bookings seamlessly.
 
