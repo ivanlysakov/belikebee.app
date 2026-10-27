@@ -197,7 +197,7 @@ Owner of all: ivan lysakov.
 
 ## Related
 
-- Glossary: [docs/features/CONTEXT.md](../CONTEXT.md) (hive rental, subscription, plan, honey quota, season)
+- Glossary: [CONTEXT.md](../../../CONTEXT.md) (hive rental, subscription, plan, honey quota, season)
 - Product: [README.md](../../../README.md), [SPEC.md](../../../SPEC.md) UC-1
 - Context boundaries: [docs/bc-map.md](../../bc-map.md), [src/modules/billing/README.md](../../../src/modules/billing/README.md)
 - Ticket: none
