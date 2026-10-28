@@ -74,34 +74,44 @@ target_surfaces: []  # filled in §4 — subset of: backend-service | web-fronte
 
 ## 3. Context and scope
 
-<!-- 🎯 Навіщо: малює КОРДОН СИСТЕМИ — хто з нею говорить ззовні, де закінчується зона довіри. -->
-<!--           Без §3 §5 і §8 (авторизація) розпливаються — неясно, що «всередині», а що «зовні». -->
-<!-- 📋 Що писати: 2-3 речення бізнес-контексту + таблиця зовнішніх систем + Mermaid C4Context. -->
-<!-- 📌 Приклад: «зовнішні — нема (свідома відмова від third-party у v1)» — це теж рішення.   -->
-<!-- Кордон довіри (trust boundary) — лінія, за якою ти не довіряєш даним без перевірки.       -->
-
-<Business context in 2-3 sentences. What the system does for whom.>
+BeLikeBee already lists admin-verified beekeepers' hives publicly; hive-rental adds the money path. A client picks a season plan on an available hive, the hive is held for 15 minutes while they pay through Monobank, and Monobank's confirmation turns the hold into a hive rental that the client names and the public list shows as rented. Beekeepers set season dates and watch confirmed season revenue; the admin curates the plan catalogue (PRD §1, SPEC UC-1).
 
 **External systems (in / out):**
 
 | Actor or system | Type | Interaction |
 |---|---|---|
-| <e.g. IC> | Person | Creates goals, adds checkpoints |
-| <e.g. notification-service> | System (internal) | Receives cron registration |
-| <e.g. Identity Provider> | System (external) | Provides JWT tokens |
+| client | Person | Chooses a plan on a hive page, pays, sees the hive rental in their own area, sets the hive nickname |
+| beekeeper | Person | Sets apiary season dates; sees rented hives and season revenue; clears a hive nickname on own hives |
+| admin | Person | Creates and archives plans; clears hive nicknames; sees payments without a hive rental (AC-19b) |
+| visitor | Person | Browses the public hive list and hive pages ("rented" badge, hive nickname) |
+| Monobank acquiring | System (external) | Out: create invoice, read invoice status, fetch the webhook public key. In: payment status webhooks, untrusted until `X-Sign` is verified |
+| Scheduler (Vercel Cron, per ADR-0001) | System (external) | In: calls protected job endpoints on a schedule, untrusted until its secret is checked |
+
+Trust boundary: everything that arrives from Monobank or the scheduler is verified before the system acts on it; client input never sets an amount (PRD §6.1, price tampering).
 
 **C4 Context (L1):**
 
 ```mermaid
 C4Context
-    title <system> — System Context
+    title BeLikeBee hive-rental — System Context
 
-    Person(user, "<User>", "<role + intent>")
-    System(system, "<Our System>", "<one-sentence description>")
-    System_Ext(ext, "<External system>", "<one-sentence description>")
+    Person(client, "client", "rents one hive per season, pays, names it")
+    Person(beekeeper, "beekeeper", "sets season dates, tracks rentals and season revenue")
+    Person(admin, "admin", "curates plans, clears nicknames, settles late payments")
+    Person(visitor, "visitor", "browses public hive pages without an account")
 
-    Rel(user, system, "<interaction>", "<protocol>")
-    Rel(system, ext, "<interaction>", "<protocol>")
+    System(belikebee, "BeLikeBee", "Next.js modular monolith: identity, apiary, billing")
+    System_Ext(monobank, "Monobank acquiring", "invoices, payment status, webhook signing key")
+    System_Ext(scheduler, "Vercel Cron", "calls job endpoints on a schedule")
+
+    Rel(client, belikebee, "Chooses a plan, pays, names the hive", "HTTPS")
+    Rel(beekeeper, belikebee, "Sets seasons, views rentals and revenue", "HTTPS")
+    Rel(admin, belikebee, "Manages plans and nicknames", "HTTPS")
+    Rel(visitor, belikebee, "Browses public hives", "HTTPS")
+    Rel(belikebee, monobank, "Creates invoices, reads status, fetches public key", "HTTPS JSON")
+    Rel(monobank, belikebee, "Sends payment status webhooks", "HTTPS, X-Sign ECDSA")
+    Rel(client, monobank, "Pays on the hosted payment page", "HTTPS")
+    Rel(scheduler, belikebee, "Triggers background jobs", "HTTPS, secret header")
 ```
 
 ## 4. Solution strategy

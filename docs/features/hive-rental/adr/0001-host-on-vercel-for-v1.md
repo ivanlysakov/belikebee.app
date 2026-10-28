@@ -42,7 +42,7 @@ The repository has no deployment config (no `vercel.json`, no Dockerfile); only 
 - Photo uploads keep working unchanged.
 
 **Negative**
-- Code run after a response has no delivery guarantee, so payment events must be stored in the database before they are acted on (see ADR-0004).
+- Code run after a response has no delivery guarantee, so payment events must be stored in the database before they are acted on (see §4).
 - The cron frequency depends on the Vercel plan; a once-a-day schedule cannot meet the 60 s catch-up target on its own (see §7).
 
 **Neutral**
