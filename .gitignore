@@ -36,3 +36,7 @@ npm-debug.log*
 # Claude Code: personal settings and internal state
 .claude/settings.local.json
 .claude/.cc-writes/
+
+# SDLC plugin: per-developer settings and worktrees
+.claude/*.local.md
+.worktrees/
