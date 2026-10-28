@@ -1,7 +1,7 @@
 ---
-status: Draft
+status: Approved
 owner: "ivan lysakov"
-reviewers: ["Tech Lead", "Security Lead"]
+reviewers: ["ivan lysakov"]
 updated_at: "2026-10-28"
 feature_size: "M"
 stage: "03"
