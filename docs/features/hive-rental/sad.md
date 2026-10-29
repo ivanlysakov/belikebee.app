@@ -216,35 +216,112 @@ C4Container
 
 ## 6. Runtime view
 
-<!-- 🎯 Навіщо: ПОТІК У RUNTIME для 1-2 критичних сценаріїв. Хто з ким коли і у якому     -->
-<!--           порядку говорить. Без §6 §5 — лише купа коробок без життя.                  -->
-<!-- 📋 Що писати: Mermaid sequenceDiagram. Учасники — імена з §5 (не вигадуй нові!).      -->
-<!--           Повідомлення семантичні («складає чорновик»), БЕЗ HTTP-методів/шляхів —     -->
-<!--           ендпоінт-рівневі sequence-діаграми зʼявляться у stage 06 (api-forge).        -->
-<!-- ⏳ RESERVED FOR SEQUENCES: architecture-design сіє лише primary flow(s) тут.          -->
-<!--           complete-sequence-diagrams (stage 06) ДОПОВНЮЄ §6 кожним критичним flow /    -->
-<!--           кожним §5 AC — без обмеження. Не намагайся покрити все тут.                  -->
-<!-- 📌 Приклад: «methodist → web-app: складає чорновик → web-app → content-api: зберегти». -->
+Participants are the §5 containers. Messages are semantic; endpoint-level detail arrives with api-forge. complete-sequence-diagrams (stage 06) extends this section to every critical flow and §5 acceptance criterion.
 
-**Critical flow 1: <flow name>**
+**Critical flow 1: checkout hold, payment and activation (AC-10, AC-15, AC-16, AC-17)**
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant API
-    participant Service
-    participant DB
-    User->>API: <request>
-    API->>Service: <call>
-    Service->>DB: <write tx>
-    DB-->>Service: ok
-    Service-->>API: result
-    API-->>User: 201
+    actor client
+    participant web as Web UI
+    participant billing as billing module
+    participant monobank as Monobank acquiring
+    participant db as PostgreSQL
+    participant outbox as Outbox dispatcher
+    participant apiary as apiary module
+
+    client->>web: picks a plan on the hive page and confirms
+    web->>billing: start checkout
+    billing->>db: one transaction - lapse expired holds, insert hold with plan terms snapshot
+    alt unique index rejects the hold
+        billing-->>web: someone else is paying for this hive
+    else hold created
+        billing->>monobank: create invoice for the snapshot amount, lifetime equal to hold time left
+        monobank-->>billing: invoice id and payment page link
+        billing->>db: store invoice id, audit entry
+        billing-->>web: payment page link
+        web-->>client: redirect to the payment page
+    end
+    client->>monobank: pays
+    monobank->>billing: payment status webhook
+    billing->>billing: verify X-Sign over the raw body
+    alt signature invalid
+        billing-->>monobank: rejected, logged and alerted
+    else status already applied
+        billing-->>monobank: accepted, nothing changes
+    else new success status
+        billing->>db: one transaction - payment paid, hold converted, hive rental active, audit, outbox PaymentSucceeded
+        billing-->>monobank: accepted
+        billing->>outbox: after the response, dispatch pending events
+        outbox->>apiary: PaymentSucceeded
+        apiary->>db: mark hive rented, record processed event id
+    end
+    client->>web: hold screen refreshes
+    web->>billing: read hive rental status
+    web-->>client: hive rental active, offer to set a hive nickname
 ```
 
-<!-- For XS/S: 1 flow above is enough. For M+: add 2-4 more (e.g. failure-mode flow, async flow). -->
+**Critical flow 2: apiary update fails and catches up (AC-17)**
 
-**Critical flow 2: <e.g. async event propagation>** — <if applicable, otherwise N/A>.
+```mermaid
+sequenceDiagram
+    actor visitor
+    participant web as Web UI
+    participant billing as billing module
+    participant scheduler as Vercel Cron
+    participant jobs as Scheduled jobs
+    participant outbox as Outbox dispatcher
+    participant db as PostgreSQL
+    participant apiary as apiary module
+
+    outbox->>apiary: PaymentSucceeded
+    apiary-->>outbox: handler fails
+    outbox->>db: keep event pending, count the attempt
+    visitor->>web: opens the public hive list
+    web->>billing: read hive rental status
+    billing-->>web: rented, with hive nickname
+    web-->>visitor: rented badge shown although the apiary mark is missing
+    scheduler->>jobs: outbox sweep
+    jobs->>outbox: dispatch pending events
+    outbox->>db: read pending events
+    outbox->>apiary: PaymentSucceeded again
+    alt event id already processed
+        apiary-->>outbox: ignored
+    else first successful handling
+        apiary->>db: mark hive rented, record processed event id
+    end
+    outbox->>db: mark event delivered
+```
+
+**Critical flow 3: missed or late payment confirmation (SPEC §4 recovery, AC-19, AC-19b)**
+
+```mermaid
+sequenceDiagram
+    participant scheduler as Vercel Cron
+    participant jobs as Scheduled jobs
+    participant billing as billing module
+    participant monobank as Monobank acquiring
+    participant db as PostgreSQL
+    actor admin
+
+    scheduler->>jobs: payment reconciliation
+    jobs->>billing: reconcile payments
+    billing->>db: read invoices still pending
+    loop each pending invoice
+        billing->>monobank: read invoice status
+        monobank-->>billing: status
+        alt paid and the hold is still valid, or the hive is free and AC-12 allows it
+            billing->>db: one transaction - payment paid, hive rental active, audit, outbox PaymentSucceeded
+        else paid but the hive was taken
+            billing->>db: payment paid without a hive rental, audit
+            billing-->>admin: listed for settlement outside the product
+        else failed or expired
+            billing->>db: payment failed, audit, outbox PaymentFailed
+        end
+    end
+```
+
+The same apply-once logic runs for a webhook that arrives after its hold lapsed, so a late confirmation and a reconciled one end in the same state.
 
 ## 7. Deployment view
 
