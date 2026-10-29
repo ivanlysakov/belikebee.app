@@ -338,22 +338,24 @@ One Next.js deploy on Vercel (ADR-0001) runs pages, server actions, the Monobank
 
 ## 8. Crosscutting concepts
 
-<!-- 🎯 Навіщо: НАСКРІЗНІ ПАТЕРНИ, які перетинають кілька модулів: логування, помилки,    -->
-<!--           авторизація, ID strategy, outbox, кеш. ⭐ Друга найгустіша секція.          -->
-<!--           Якщо патерн всередині одного модуля — він НЕ сюди. Якщо це конвенція        -->
-<!--           проєкту в цілому — у CLAUDE.md.                                              -->
-<!-- 📋 Що писати: таблиця концепт / конвенція / де визначено. Один рядок на концепт.      -->
-<!-- 📌 Приклад: «UUID v7 (час+випадковий, сортується) у app-layer» — як default з CLAUDE.md. -->
-
 | Concept | Convention | Where defined |
 |---|---|---|
-| Logging | <e.g. structured slog, fields `module=<name>`> | <CLAUDE.md §X or here> |
-| Authentication | <e.g. JWT via session middleware> | <CLAUDE.md §X> |
-| Error handling | <e.g. domain sentinel → ports/errors.go → apperr JSON> | <CLAUDE.md §X> |
-| ID strategy | <e.g. UUID v7 in app layer> | <CLAUDE.md §X> |
-| Internationalisation | <e.g. N/A, English only> | — |
-| Observability | <e.g. OpenTelemetry on HTTP boundaries> | — |
-| Outbox / events | <module-specific patterns, if any> | <here> |
+| Logging | Structured JSON lines to stdout through a small `src/shared/log.ts` (no new dependency): `level`, `msg`, `requestId`, `module`, plus `invoiceId` / `holdId` / `eventId` where relevant; `alert: true` marks entries that need attention (§7) | here; SPEC §4 |
+| Authentication | NextAuth v4 JWT session read with `identity.getSession()`; roles `CLIENT` / `BEEKEEPER` / `ADMIN`; verified beekeeper through `apiary.currentBeekeeper()` | `src/modules/identity/auth.ts`, `src/modules/apiary/access.ts` |
+| Authorization | Checked in every server action and route handler (SPEC §4) through `billing/access.ts`; anything owned by another beekeeper or client answers exactly like a missing one (AC-08, AC-22, AC-25, AC-28); only clients start a checkout (AC-14) | `src/modules/apiary/apiaries.ts`; PRD §6.1 |
+| Error handling | Server actions return result unions, not exceptions; a unique-index violation on a hold maps to "someone else is paying" (ADR-0006) | `src/modules/apiary/add-hive.action.ts` |
+| Input validation | Zod on every form, the webhook body (after signature check) and env vars | ADR 0001 (initial setup) §5 |
+| ID strategy | `cuid()` string IDs; cross-module references are plain IDs with no Prisma relation (`hiveId`, `apiaryId`, `clientId`) | `src/modules/apiary/apiary.prisma`, `.claude/rules/billing.md` |
+| Money | Integer kopecks (`Int`) end to end, UAH; the charged amount comes from the hold's plan-terms snapshot, never from the client | `.claude/rules/billing.md`; PRD §6.1 |
+| Time | Timestamps stored in UTC; season start and end are dates read in Europe/Kyiv: a season runs from 00:00 on its start date to 00:00 after its end date; hold expiry is `startedAt + 15 min`, not reset by retries | SPEC §4; PRD §1 clarify decisions |
+| Idempotency | A Monobank status change is applied once per invoice and status (stored applied status + `modifiedDate`); each event consumer records processed event IDs (ADR-0005) | `.claude/rules/billing.md`; here |
+| Audit | One `PaymentAuditEntry` per payment state change, in the same transaction as the change (100% audited, PRD §6) | here |
+| Webhook trust | `X-Sign` ECDSA verified over the raw body with the key from `GET /api/merchant/pubkey`, cached and refetched once on verification failure; invalid → rejected, logged with `alert: true` | CLAUDE.md, ADR 0001 (initial setup) |
+| Job trust | Job endpoints accept only the cron secret in the `Authorization` header | here |
+| Domain events | Written to the outbox in the state change's transaction; delivered at least once; handlers wired in `src/app/event-subscriptions.ts` | ADR-0005 |
+| Internationalisation | next-intl, uk and en; a `billing` messages namespace; amounts formatted as UAH, dates in Europe/Kyiv | `src/app/i18n/messages.ts` |
+| Privacy | Public pages show the hive nickname as plain text (1–40 characters) and never client name, email or phone; the client's display name is shown only to the beekeeper who owns the hive | PRD §6.1 |
+| UI foundation | Screens composed from `src/shared/ui` primitives and `globals.css` tokens; new primitives added through shadcn, no raw colors or text sizes in markup (enforced by a PreToolUse hook) | `docs/design/design-system.md`, CLAUDE.md |
 
 ## 9. Architecture decisions
 
