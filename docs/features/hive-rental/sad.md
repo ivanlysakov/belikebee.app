@@ -136,49 +136,82 @@ Each tactical decision in later sections should be traceable to one of these str
 
 ## 5. Building block view
 
-<!-- 🎯 Навіщо: ВНУТРІШНЯ ДЕКОМПОЗИЦІЯ — модулі, контейнери, БД. Статична топологія:   -->
-<!--           хто з ким може говорити. Без §5 §6 (сценарії) не має словника учасників. -->
-<!-- 📋 Що писати: 1 абзац про стиль (шари/гексагональна/clean/на подіях) +            -->
-<!--           дерево папок + Mermaid C4Container.                                       -->
-<!-- 📌 ОДИН Container на кожну оголошену target_surface (frontmatter): fullstack        -->
-<!--           [backend-service, web-frontend] = backend-API container + web/SPA container; -->
-<!--           [backend-service, mobile-app] = API + mobile app. Container(web, …) нижче — -->
-<!--           лише приклад однієї поверхні; додай/заміни під оголошене у §4. → _shared/surfaces.md -->
-<!-- 📌 Приклад: «web-app, content-api, media-worker, postgres, s3, cdn».                -->
-
-<One paragraph: layered / hexagonal / clean / event-driven. Why.>
+The feature stays inside the feature-first modular monolith (ADR 0001 initial setup): `billing` gets its first code and owns every new table (ADR-0004); `apiary` gains a rented mark and event handlers; `identity` is only read through `getSession`. Modules talk through `index.ts` calls (reads: ownership, public hive data, display names) and through outbox-backed domain events (state changes: `PaymentSucceeded`, `SubscriptionEnded`). Files follow the repo's flat module convention (`*.action.ts`, query modules, `*.schema.ts`, `access.ts`, `ui/`, `messages/`), with the Monobank adapter in its own folder behind a gateway interface (ADR 0001 initial setup §4).
 
 **Internal decomposition:**
 
 ```
-<e.g. internal/modules/goals/>
-├── domain/       <entities + sentinel errors>
-├── app/          <use cases / services>
-├── infra/        <repository + outbox impl>
-├── ports/        <HTTP handlers, DTOs, error mapping>
-└── module.go     <self-wiring>
+src/modules/billing/
+├── billing.prisma            Plan, Season, CheckoutHold, Subscription (hive rental + hive nickname), Payment, PaymentAuditEntry
+├── index.ts                  public API: server actions, read models, UI, event handlers, job entry points, messages
+├── access.ts                 currentClient / currentAdmin (role checks over identity.getSession)
+├── plans.ts                  plan catalogue queries
+├── create-plan.action.ts     archive-plan.action.ts      plan.schema.ts
+├── seasons.ts                set-season.action.ts        season.schema.ts   (ownership via apiary/index.ts)
+├── checkout.ts               start-checkout.action.ts    (hold transaction, ADR-0006; invoice creation)
+├── payments.ts               apply a Monobank status change once, audit it, activate or record "paid without a hive rental" (AC-19b)
+├── webhook.ts                handleMonobankWebhook: X-Sign check on the raw body, then payments.ts
+├── rentals.ts                read models: hive rental status per hive, client's rental, beekeeper season revenue
+├── set-nickname.action.ts    clear-nickname.action.ts    nickname.schema.ts
+├── jobs.ts                   reconcilePayments, endFinishedSeasons
+├── monobank/
+│   ├── gateway.ts            PaymentGateway interface
+│   └── monobank-gateway.ts   invoice create / status / pubkey + ECDSA verify
+├── ui/                       plan picker, hold screen islands, client rental card, season form, revenue table, admin plans
+└── messages/{uk,en}.json
+
+src/modules/apiary/           + rented mark on Hive; rental-events.ts (PaymentSucceeded → mark, SubscriptionEnded / SubscriptionSuspended → clear)
+src/shared/db/outbox.prisma   OutboxEvent, ProcessedEvent (infrastructure, no business meaning)
+src/shared/event-bus.ts       publish(tx, event) writes OutboxEvent; dispatchPending() delivers to subscribers
+src/shared/events/index.ts    + PaymentSucceeded, PaymentFailed, SubscriptionActivated, SubscriptionEnded, …
+src/app/event-subscriptions.ts  wires module handlers to event types (src/shared cannot import modules)
+src/app/api/billing/monobank/webhook/route.ts   thin: raw body → billing.handleMonobankWebhook
+src/app/api/jobs/{outbox,reconcile-payments,season-end}/route.ts   thin, cron-secret checked
+src/app/…                     hive page with plans, checkout hold page, client area, beekeeper area, admin plans
 ```
 
 **C4 Container (L2):**
 
 ```mermaid
 C4Container
-    title <system> — Containers
+    title BeLikeBee hive-rental — Containers
 
-    Person(user, "<User>")
+    Person(client, "client")
+    Person(beekeeper, "beekeeper")
+    Person(admin, "admin")
+    Person(visitor, "visitor")
 
-    Container_Boundary(boundary, "<Our System>") {
-        Container(web, "<Web/API container>", "<technology>", "<purpose>")
-        Container(svc, "<Service container>", "<technology>", "<purpose>")
-        ContainerDb(db, "<DB>", "<technology>", "<purpose>")
+    System_Ext(monobank, "Monobank acquiring", "invoices, status, webhook key")
+    System_Ext(scheduler, "Vercel Cron", "scheduled calls")
+
+    Container_Boundary(app, "BeLikeBee Next.js deploy on Vercel") {
+        Container(web, "Web UI", "Next.js RSC + server actions + client islands", "hive page, hold screen, client, beekeeper and admin areas")
+        Container(billing, "billing module + webhook handler", "TypeScript, Prisma", "plans, seasons, holds, hive rentals, payments, audit")
+        Container(jobs, "Scheduled jobs", "Next.js route handlers", "outbox sweep, payment reconciliation, season end")
+        Container(apiary, "apiary module", "TypeScript, Prisma", "apiaries, hives, public hive data, rented mark")
+        Container(identity, "identity module", "NextAuth v4", "sessions, roles, display names")
+        Container(outbox, "Outbox dispatcher", "src/shared event bus", "delivers stored domain events to subscribers")
     }
 
-    System_Ext(ext, "<External>", "<purpose>")
+    ContainerDb(db, "PostgreSQL 17", "Prisma", "billing tables, apiary tables, OutboxEvent, ProcessedEvent")
 
-    Rel(user, web, "<interaction>", "<protocol>")
-    Rel(web, svc, "<service calls>")
-    Rel(svc, db, "<reads/writes>", "<driver>")
-    Rel(svc, ext, "<emits>", "<protocol>")
+    Rel(client, web, "Picks a plan, pays, names the hive", "HTTPS")
+    Rel(beekeeper, web, "Sets seasons, views revenue", "HTTPS")
+    Rel(admin, web, "Manages plans and nicknames", "HTTPS")
+    Rel(visitor, web, "Browses public hives", "HTTPS")
+    Rel(web, billing, "Server actions and read models", "in-process")
+    Rel(web, apiary, "Public hive data", "in-process")
+    Rel(web, identity, "Session and role", "in-process")
+    Rel(billing, apiary, "Checks apiary ownership and hive existence", "index.ts")
+    Rel(billing, monobank, "Creates invoices, reads status", "HTTPS JSON")
+    Rel(monobank, billing, "Payment status webhook", "HTTPS, X-Sign")
+    Rel(scheduler, jobs, "Triggers jobs", "HTTPS, secret header")
+    Rel(jobs, billing, "Reconcile payments, end seasons", "in-process")
+    Rel(jobs, outbox, "Sweeps pending events", "in-process")
+    Rel(billing, db, "Reads and writes billing tables and OutboxEvent in one transaction", "Prisma")
+    Rel(apiary, db, "Reads and writes apiary tables", "Prisma")
+    Rel(outbox, db, "Reads pending events, marks delivered", "Prisma")
+    Rel(outbox, apiary, "PaymentSucceeded, SubscriptionEnded", "handler call")
 ```
 
 ## 6. Runtime view
