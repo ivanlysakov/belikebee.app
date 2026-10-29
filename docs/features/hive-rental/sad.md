@@ -325,24 +325,16 @@ The same apply-once logic runs for a webhook that arrives after its hold lapsed,
 
 ## 7. Deployment view
 
-<!-- 🎯 Навіщо: ТОПОЛОГІЯ, яку DevOps має знати без читання Helm-чартів — скільки реплік,  -->
-<!--           де живе фоновий обробник, ПРИ ЯКИХ ЧИСЛАХ масштабуємось.                     -->
-<!-- 📋 Що писати: 2-3 речення про топологію + метрики + алерти + конкретні числа-пороги.   -->
-<!-- 📌 Приклад: «500 IC → партиціонування за кварталом» (не «при зростанні подумаємо»).    -->
-<!-- 🎯 Можна N/A для XS/S функцій, що переюзають існуюче розгортання без змін.            -->
-
-<Topology in 2-3 sentences. Where it runs (k8s / VM / serverless), replicas, scaling thresholds.>
+One Next.js deploy on Vercel (ADR-0001) runs pages, server actions, the Monobank webhook and the three job endpoints as serverless functions; there is no long-running process. PostgreSQL 17 is a managed instance reached through `@prisma/adapter-pg` (provider not chosen yet, §11). Vercel Cron (Hobby plan) calls each job once a day as a backstop: outbox sweep, payment reconciliation, and season end shortly after 00:00 Europe/Kyiv. The fast path does not wait for cron: the webhook activates the hive rental and dispatches the outbox after the response, and every refresh of the checkout-hold screen dispatches pending events and, if no webhook has arrived about 20 s after payment started, reads the invoice status from Monobank and applies it through the same apply-once logic (flow 3). Hold expiry and the "rented" badge are computed at read time, so they need no job.
 
 **Monitoring:**
-- <Metrics — e.g. Prometheus `<metric_name>`>
-- <Alerts — e.g. "outbox lag > 10 min → page on-call">
-- <Tracing — e.g. OpenTelemetry HTTP spans>
+- Structured JSON logs with a request ID on every server action, webhook and job call (SPEC §4); webhook and job logs carry `invoiceId` / `holdId` / `eventId`.
+- Alert-level log entries for: a webhook with an invalid `X-Sign`; an outbox event still pending after 5 attempts; a payment recorded as paid without a hive rental (AC-19b); a job run that fails. The alert channel is not chosen yet (§11).
+- Timing: checkout start → payment link returned, and webhook received → hive rental active, logged per request for the PRD §6 latency and activation-delay measurements.
 
 **Scaling thresholds:**
-- <e.g. 500 IC × 5 goals × 26 checkpoints/Q = 65k rows/year — comfortable in one table>
-- <e.g. partitioning by quarter at >500k rows/year>
-
-<!-- For XS/S that doesn't change deployment: <!-- N/A: feature reuses existing deployment unit -->. -->
+- v1 targets 10 paid hive rentals and 5 beekeepers before the first season (PRD §7): every billing table stays in the hundreds of rows; no partitioning, caching or read replica.
+- The daily cron is the limit: before real money (PRD §3), or if a missed webhook ever leaves a paid client waiting more than a day, move the outbox sweep and payment reconciliation to an every-minute schedule (Vercel Pro or an equivalent scheduler) (§11).
 
 ## 8. Crosscutting concepts
 
