@@ -373,29 +373,37 @@ ADR files live under `docs/features/hive-rental/adr/NNNN-<title>.md`. Project-wi
 
 ## 10. Quality requirements
 
-<!-- 🎯 Навіщо: ДЕРЕВО ЯКОСТЕЙ (Quality Tree) — беремо мету з §1 і розкладаємо на          -->
-<!--           конкретні листя: тести, метрики, конфіги, drill-и. ⭐ Без §10 §1 — це       -->
-<!--           маніфест. З §10 кожна декларація мапиться на щось, ЩО МОЖНА ДОВЕСТИ.        -->
-<!-- 📋 Що писати: на кожну якість з §1 — When / Then / How verify. Числа з PRD §6 NFR     -->
-<!--           ДОСЛІВНО (не округлюй p95 ≤250мс до ≤300мс — це F6-помилка критика).        -->
-<!-- 📌 Приклад: «p95 ≤500 мс на UPDATE блоку, перевіримо k6 load test 100 req/s».        -->
+Each top-3 goal from §1 expanded into a full scenario, plus the remaining PRD §6 rows. Numbers are quoted from PRD §6.
 
-Each top-3 goal from §1 expanded into a full scenario:
+**QG-1. Payment correctness and exclusivity**
+- **When:** the same Monobank payment confirmation arrives twice; 10 clients start a checkout on one hive at the same moment; a confirmation arrives after its hold lapsed (AC-19b).
+- **Then:** 0 duplicate rentals and 0 double-counted payments on repeated confirmations; 100% of payment state changes audited; 0 hives with more than one active rental or checkout hold, under 10 concurrent attempts.
+- **How verify:** `src/modules/billing/payments.int.test.ts` replays one signed webhook body twice and asserts one active hive rental, one paid payment, season revenue counting it once, and one audit entry per state change; `src/modules/billing/checkout.int.test.ts` runs 10 `startCheckout` calls on one hive with `Promise.all` and asserts exactly one held hold, plus a late-confirmation case racing a new hold. Both on `belikebee_test` (`pnpm test:int`).
 
-**QG-1. <quality attribute>**
-- **When:** <trigger condition>
-- **Then:** <expected behavior with numbers from PRD NFR>
-- **How verify:** <test / chaos drill / load test / observability>
+**QG-2. Activation reliability**
+- **When:** a payment confirmation is received, including when the `apiary` handler for `PaymentSucceeded` fails (AC-17).
+- **Then:** Activation delay: payment confirmation received → hive rental active and visible ≤ 60 s p95; the hive shows rented and no one else can start renting it while the apiary mark is missing, and the mark appears after the next outbox dispatch without a manual step.
+- **How verify:** integration test with a throwing `apiary` handler: billing reports the hive rented, the outbox event stays pending, a sweep call delivers it and a second sweep is a no-op. In production: gap between confirmation receipt and rental activation in the payment audit trail (PRD §6).
 
-**QG-2. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**QG-3. Responsiveness**
+- **When:** a visitor opens a hive page with plans or the public hive list; a client confirms a plan.
+- **Then:** Latency p95: hive page with plans, public hive list ≤ 500 ms; Latency p95: plan confirmed → client on the payment page ≤ 2 s.
+- **How verify:** p95 page response from structured request logs, rolling 7 days (SPEC §4); request-log timing of checkout start, including the payment provider call (§8 logger fields).
 
-**QG-3. <quality attribute>**
-- **When:** <trigger>
-- **Then:** <expected>
-- **How verify:** <how>
+**QG-4. Checkout hold timing**
+- **When:** a hold starts, a payment fails and is retried, the hold reaches 15 minutes.
+- **Then:** Checkout hold lasts 15 min from its start, not restarted by a payment retry; the hive shows as available ≤ 1 min after the hold lapses.
+- **How verify:** integration test with the clock moved past expiry (`vi.setSystemTime`): a retry keeps the original `expiresAt`, and a new client can start a hold once the clock passes it.
+
+**QG-5. Availability**
+- **When:** any calendar month in the first season.
+- **Then:** Availability 99.5% monthly.
+- **How verify:** hosting uptime monitor (SPEC §4); the monitor is not set up yet (§11).
+
+**QG-6. Accessibility**
+- **When:** the end-to-end suite runs on the hive page, checkout, client area and beekeeper area.
+- **Then:** WCAG 2.1 AA, 0 serious violations on the hive page, checkout, client area and beekeeper area.
+- **How verify:** automated accessibility audit in the Playwright end-to-end suite (`pnpm test:e2e`); an axe-based audit dependency has to be added (§11).
 
 ## 11. Risks and technical debt
 
