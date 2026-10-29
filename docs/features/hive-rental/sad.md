@@ -359,17 +359,17 @@ One Next.js deploy on Vercel (ADR-0001) runs pages, server actions, the Monobank
 
 ## 9. Architecture decisions
 
-<!-- 🎯 Навіщо: ЗВОРОТНИЙ ІНДЕКС на папку adr/. `ls adr/` дає файли, §9 дає семантику —    -->
-<!--           чому вони існують, до якого зрізу SAD привʼязані, у якому статусі.           -->
-<!-- 📋 Що писати: таблиця з 4 колонками. Один рядок на ADR. Mixed status — це OK.         -->
-<!-- 📌 Приклад: «0001 | Зберігати урок як таблицю блоків | Accepted | §4».                -->
-
 | # | Title | Status | Section |
 |---|---|---|---|
-| <NNNN> | <imperative — e.g. "Use sliding window for rate limiting"> | Accepted | §<N> |
-| <NNNN> | <imperative — e.g. "Co-locate outbox worker in API process"> | Accepted | §<N> |
+| 0001 | [Host on Vercel for v1](adr/0001-host-on-vercel-for-v1.md) | Accepted | §2 |
+| 0002 | [Build backend-service, web-frontend and worker surfaces](adr/0002-build-backend-web-and-worker-surfaces.md) | Accepted | §4 |
+| 0003 | [Render the rental UI on the server with client islands](adr/0003-render-rental-ui-on-server-with-client-islands.md) | Accepted | §4 |
+| 0004 | [Billing owns seasons, checkout holds and hive rentals](adr/0004-billing-owns-seasons-holds-and-hive-rentals.md) | Accepted | §4 |
+| 0005 | [Deliver domain events through a transactional outbox](adr/0005-deliver-domain-events-through-transactional-outbox.md) | Accepted | §4 |
+| 0006 | [Enforce hive exclusivity with partial unique indexes](adr/0006-enforce-hive-exclusivity-with-partial-unique-indexes.md) | Accepted | §4 |
+| 0007 | [End hive rentals with a SubscriptionEnded event](adr/0007-end-hive-rentals-with-subscription-ended-event.md) | Accepted | §4 |
 
-ADR files live under `docs/features/<slug>/adr/NNNN-<title>.md`.
+ADR files live under `docs/features/hive-rental/adr/NNNN-<title>.md`. Project-wide decisions stay in `docs/adr/` (ADR 0001 initial setup).
 
 ## 10. Quality requirements
 
