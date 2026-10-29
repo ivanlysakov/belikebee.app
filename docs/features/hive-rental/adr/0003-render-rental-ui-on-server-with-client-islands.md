@@ -44,6 +44,7 @@ Existing pages are React Server Components; forms submit through server actions 
 - A later mobile app would need a JSON API that does not exist yet.
 
 **Neutral**
+- Each refresh of the payment-status island also dispatches pending outbox events and, after about 20 s without a webhook, reconciles the hold's invoice with Monobank (SAD §6 flow 3, §7), so a client waiting on the screen does not depend on the daily cron.
 - Screens are composed from the existing `src/shared/ui` primitives and `globals.css` tokens; missing primitives (e.g. badge, card) are added through shadcn, not hand-rolled.
 
 ## Links

@@ -48,9 +48,9 @@ target_surfaces: [backend-service, web-frontend, worker]  # filled in §4 — su
 - TypeScript `^7.0.2`; Next.js `^16.4.2` (App Router), React `^19.3.1` (`package.json`).
 - Prisma `7.10.1` with `@prisma/adapter-pg`, multi-file schema (`prisma.config.ts` → `src`, generator in `src/shared/db/schema.prisma`); PostgreSQL 17 (`postgres:17` in `.devcontainer/docker-compose.yaml`); migrations in `src/shared/db/migrations/`.
 - NextAuth `^4.24.15` (Credentials provider, JWT sessions carrying `id` and `role`); Zod `^4.6.7` for all external input (forms, webhooks, env); next-intl `4.14.9` (uk and en); Tailwind `^4.3.3` + shadcn/ui; Vitest `^5.0.5` (unit + integration on `belikebee_test`), `@playwright/test` `^1.64.1`; pnpm `10.28.0`.
-- Feature-first modular monolith (ADR-0001, `ARCHITECTURE.md`): cross-module calls only through `src/modules/<name>/index.ts` or domain events in `src/shared/events/`; each Prisma model is owned by one module.
-- Monobank acquiring is the only payment gateway, called only from `billing` (ADR-0001 §4, `.claude/rules/billing.md`).
-- The existing event bus (`src/shared/event-bus.ts`) is in-process and not durable; ADR-0001 requires a durable path for payment events before going live. No subscriber is wired yet.
+- Feature-first modular monolith (ADR 0001 (initial setup), `ARCHITECTURE.md`): cross-module calls only through `src/modules/<name>/index.ts` or domain events in `src/shared/events/`; each Prisma model is owned by one module.
+- Monobank acquiring is the only payment gateway, called only from `billing` (ADR 0001 (initial setup) §4, `.claude/rules/billing.md`).
+- The existing event bus (`src/shared/event-bus.ts`) is in-process and not durable; ADR 0001 (initial setup) requires a durable path for payment events before going live. No subscriber is wired yet.
 - IDs are `cuid()` strings; money is integer kopecks end to end (`.claude/rules/billing.md`); no scheduler or background-job infrastructure exists.
 - **Hosting: Vercel, for now** (serverless functions, no long-running process; matches the existing `@vercel/blob` photo storage). Cloudflare Workers (via OpenNext) was considered and may replace it, so the background-job trigger is kept replaceable → [ADR-0001](adr/0001-host-on-vercel-for-v1.md), §11.
 
@@ -68,7 +68,7 @@ target_surfaces: [backend-service, web-frontend, worker]  # filled in §4 — su
 **Regulatory / external.**
 - Payments in Monobank test mode only; no real money in v1 (PRD §3).
 - No card data stored by the platform (SPEC §4); amounts and statuses are confidential.
-- Every Monobank webhook is verified before processing: ECDSA over the raw body (`X-Sign`) with the key from `GET /api/merchant/pubkey`; no shared secret (CLAUDE.md, ADR-0001).
+- Every Monobank webhook is verified before processing: ECDSA over the raw body (`X-Sign`) with the key from `GET /api/merchant/pubkey`; no shared secret (CLAUDE.md, ADR 0001 (initial setup)).
 - Personal data is confidential: a hive rental links a named person to a payment and a place; the client's display name is shown only to the owning beekeeper; the hive nickname is public plain text (PRD §6.1).
 - Security review required before release (PRD §6.1). Timestamps stored in UTC, shown and season-bounded in Europe/Kyiv; currency UAH (SPEC §4, PRD §1).
 
@@ -126,11 +126,11 @@ C4Context
 
 1. **UI-architecture (web-frontend): server-rendered pages + server actions + two client islands** → [ADR-0003](adr/0003-render-rental-ui-on-server-with-client-islands.md). Pages stay React Server Components and commands go through server actions, as in `apiary`. Only the hold countdown and the payment-status block are `"use client"`; the status block calls `router.refresh()` every few seconds until the payment status is final. Serves QG-3 (p95 ≤ 500 ms) and WCAG 2.1 AA with little browser JS; no JSON API is written for the UI.
 2. **`billing` owns seasons, checkout holds, subscriptions (hive rentals), hive nicknames, plans and payments** → [ADR-0004](adr/0004-billing-owns-seasons-holds-and-hive-rentals.md). Closes PRD §8 "which context owns season dates". `billing` is the source of truth for whether a hive is available, awaiting payment or rented; `src/app` pages compose `apiary`'s public hive data with `billing`'s rental status. `billing` checks apiary ownership through `apiary/index.ts`. `apiary` keeps only its own rented mark, set and cleared by events, and never reads payment state (`.claude/rules/apiary.md`). Serves QG-1 and QG-2: exclusivity and the badge never depend on the apiary mark (AC-17).
-3. **Domain events go through a transactional outbox** → [ADR-0005](adr/0005-deliver-domain-events-through-transactional-outbox.md). Publishing writes an `OutboxEvent` row in the same database transaction as the state change; after the response (`after()`), a dispatcher hands pending rows to subscribers; the worker's sweep re-dispatches anything left. Delivery is at-least-once, so every handler is idempotent (a processed-event record per consumer). Closes the ADR 0001 (initial setup) risk of losing payment events and the PRD §8 "how the apiary's rented mark catches up". Serves QG-2.
+3. **Domain events go through a transactional outbox** → [ADR-0005](adr/0005-deliver-domain-events-through-transactional-outbox.md). Publishing writes an `OutboxEvent` row in the same database transaction as the state change; after the response (`after()`), a dispatcher hands pending rows to subscribers; the worker's sweep re-dispatches anything left. Delivery is at-least-once, so every handler is idempotent (a processed-event record per consumer). Closes the ADR 0001 (initial setup) risk of losing payment events and answers PRD §8 "how the apiary's rented mark catches up": at the next dispatch, which is a checkout-hold screen refresh or the daily sweep (§7), so up to a day after a failed handler. The 60 s target applies to activation and visibility, which read `billing`, never the mark. Serves QG-2.
 4. **Hive exclusivity is enforced by the database** → [ADR-0006](adr/0006-enforce-hive-exclusivity-with-partial-unique-indexes.md). One transaction per checkout start: lapse expired holds, then insert the new hold. Partial unique indexes (unique only over rows in a given status) allow one live claim (held or active) per hive and season and one held hold per client; AC-12's overlapping-season rule runs under a per-client transaction-scoped advisory lock (`pg_advisory_xact_lock`). A second concurrent insert fails in Postgres, and client B is told someone else is paying. Serves QG-1 (10 concurrent attempts → 0 double claims).
 5. **Season end is a new `SubscriptionEnded` event** → [ADR-0007](adr/0007-end-hive-rentals-with-subscription-ended-event.md). Closes PRD §8 "which signal clears the rented state at season end". Read-side status is computed from the season end date in Europe/Kyiv, so AC-26 holds at 00:00 without waiting for a job. A daily worker job then marks ended subscriptions `ENDED` and publishes `SubscriptionEnded` through the outbox, and `apiary` clears its mark on it. This needs an amendment to `.claude/rules/apiary.md` (clear on `SubscriptionSuspended` or `SubscriptionEnded`), `docs/bc-map.md` and `src/shared/events/`.
 
-Inline (below the ADR threshold): a hold lapses by time (`expiresAt` compared at read and write), with no job; checkout holds snapshot the plan's season price and honey quota when they start (AC-05, AC-10, price tampering); the Monobank invoice is created with a lifetime equal to the hold's remaining time (PRD §8 open question, first build slice).
+Inline (below the ADR threshold): a hold lapses by time (`expiresAt` compared at read and write), with no job; checkout holds snapshot the plan's season price and honey quota when they start (AC-05, AC-10, price tampering); the Monobank invoice is created with a lifetime equal to the hold's remaining time (PRD §8 open question, first build slice); each refresh of the checkout-hold screen's status island (ADR-0003) also dispatches pending outbox events (ADR-0005) and, if no webhook arrived about 20 s after payment started, reconciles that hold's invoice with Monobank (§6 flow 3, §7).
 
 Each tactical decision in later sections should be traceable to one of these strategic seeds. Tactical decisions that *contradict* a strategic choice are red flags — surface them in §11 Risks.
 
@@ -297,6 +297,8 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
+    actor client
+    participant web as Web UI
     participant scheduler as Vercel Cron
     participant jobs as Scheduled jobs
     participant billing as billing module
@@ -304,8 +306,13 @@ sequenceDiagram
     participant db as PostgreSQL
     actor admin
 
-    scheduler->>jobs: payment reconciliation
-    jobs->>billing: reconcile payments
+    alt hold screen refresh, no webhook about 20 s after payment started
+        client->>web: hold screen refreshes
+        web->>billing: reconcile this hold's invoice and dispatch pending events
+    else daily backstop
+        scheduler->>jobs: payment reconciliation
+        jobs->>billing: reconcile all pending invoices
+    end
     billing->>db: read invoices still pending
     loop each pending invoice
         billing->>monobank: read invoice status
@@ -382,7 +389,7 @@ Each top-3 goal from §1 expanded into a full scenario, plus the remaining PRD �
 
 **QG-2. Activation reliability**
 - **When:** a payment confirmation is received, including when the `apiary` handler for `PaymentSucceeded` fails (AC-17).
-- **Then:** Activation delay: payment confirmation received → hive rental active and visible ≤ 60 s p95; the hive shows rented and no one else can start renting it while the apiary mark is missing, and the mark appears after the next outbox dispatch without a manual step.
+- **Then:** Activation delay: payment confirmation received → hive rental active and visible ≤ 60 s p95; the hive shows rented and no one else can start renting it while the apiary mark is missing, and the mark appears after the next outbox dispatch without a manual step (at worst the daily sweep, up to a day later; §7).
 - **How verify:** integration test with a throwing `apiary` handler: billing reports the hive rented, the outbox event stays pending, a sweep call delivers it and a second sweep is a no-op. In production: gap between confirmation receipt and rental activation in the payment audit trail (PRD §6).
 
 **QG-3. Responsiveness**
@@ -417,13 +424,13 @@ Each top-3 goal from §1 expanded into a full scenario, plus the remaining PRD �
 | No alert channel, uptime monitor or accessibility-audit dependency yet (§7, QG-5, QG-6) | Medium | Alert-level entries are logged with `alert: true` now; choose a channel and monitor and add the audit dependency before the first season | ivan lysakov — before the first season |
 | A colony dies or a beekeeper drops out mid-season: handled only by the admin outside the product (PRD §8) | Medium | Counted in the "payment incidents" KPI; revisit before the first season | ivan lysakov — before the first season |
 | Brownfield: changing `publish()` to take a transaction touches `add-hive.action.ts` and `register-user.action.ts` | Low | Migrate both callers in the same task; no subscriber exists yet, so nothing else breaks | ivan lysakov |
-| Hosting may move to Cloudflare Workers (ADR-0001) | Low | Job endpoints are plain route handlers; only the cron config, Prisma driver adapter and photo storage would change | ivan lysakov |
-| `.claude/rules/apiary.md`, `docs/bc-map.md`, `src/modules/billing/README.md` and `src/shared/events/` do not yet reflect ADR-0004 and ADR-0007 | Low | One documentation task in `/sdlc:break-tasks`, done before the `apiary` handlers | ivan lysakov — before `/sdlc:break-tasks` |
+| Hosting may move to Cloudflare Workers (ADR-0001) | Low | Job endpoints are plain route handlers; only the cron config, Prisma driver adapter and photo storage would change | ivan lysakov — before the first deploy |
+| `.claude/rules/apiary.md`, `.claude/rules/billing.md` (Owns: Season, CheckoutHold, hive nickname on Subscription), `docs/bc-map.md`, `src/modules/billing/README.md` and `src/shared/events/` do not yet reflect ADR-0004 and ADR-0007 | Low | One documentation task in `/sdlc:break-tasks`, done before the `apiary` handlers | ivan lysakov — before `/sdlc:break-tasks` |
 
 **Accepted debt (acceptable in v1, plan to fix later):**
 - Daily cron on Vercel Hobby: a missed webhook for a client who left the hold screen activates the next day; move to an every-minute schedule before real money (§7).
 - Season is stored in `billing` although the glossary ties it to the apiary (ADR-0004).
-- The `apiary` rented mark can lag up to a day after season end; nothing displays it (ADR-0007).
+- The `apiary` rented mark can lag up to a day after season end (ADR-0007), and up to a day after a failed `PaymentSucceeded` handler when no checkout-hold screen refresh dispatches it sooner (ADR-0005, §7); nothing displays the mark. This differs from the PRD §8 default "within the 60 s activation target", which holds for activation and visibility only.
 - Managed Postgres provider not chosen; any provider reachable from Vercel through `@prisma/adapter-pg` works.
 
 ## 12. Glossary

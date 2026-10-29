@@ -27,7 +27,7 @@ ticket: "none"
 ## Considered options
 
 1. **Transactional outbox** — an `OutboxEvent` row written in the same transaction as the state change; a dispatcher delivers it after the response; a scheduled sweep re-delivers anything left; handlers are idempotent.
-2. **In-process bus + state reconciliation** — keep `publish()`; a scheduled job re-publishes the current state of every active hive rental so the apiary mark converges.
+2. **State reconciliation** — keep the in-process `publish()` and treat the billing tables as the durable record: a scheduled job re-publishes the current state of every active hive rental so the apiary mark converges. This satisfies ADR 0001 (initial setup)'s durability requirement for state-like events, but not for fact-like ones such as `PaymentFailed`.
 
 ## Decision outcome
 
