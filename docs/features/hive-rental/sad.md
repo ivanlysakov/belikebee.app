@@ -407,25 +407,24 @@ Each top-3 goal from §1 expanded into a full scenario, plus the remaining PRD �
 
 ## 11. Risks and technical debt
 
-<!-- 🎯 Навіщо: ⭐ збирає ВСЕ, що може зламатись — і не лише технічне. Без §11 ризики   -->
-<!--           обговорюються на стендапах і губляться; борг лишається у голові того,    -->
-<!--           хто його прийняв.                                                          -->
-<!-- 📋 Що писати: таблиця ризик/борг — серйозність — мітигація — власник. Технічний    -->
-<!--           борг окремою секцією.                                                      -->
-<!-- 📌 Приклад: «EM не пушить — member не оновлює дані | High | …». Перший ризик —      -->
-<!--           часто продуктовий, не технічний. Це нормально.                            -->
-
-<!-- Severity column literals: Low / Medium / High for regular risks; "Open question" for rows
-     created by Step-7 `Save as Open Question` resolutions (see references/socratic-loop.md). -->
-
 | Risk / debt | Severity | Mitigation | Owner |
 |---|---|---|---|
-| <e.g. Outbox lag may reach hours during downstream outage> | Medium | <Alert >10 min, on-call playbook, retry backoff> | <DevOps> |
-| <e.g. No event schema versioning in v1> | Medium | <ADR-NNNN planned for v2, graceful handling of unknown fields> | <Backend> |
-| Open architectural decision: <decision-headline> | Open question | Resolve before <stage trigger or YYYY-MM-DD>; <inline rationale from Step-7 Save-as-OQ> | <owner> |
+| Monobank test access is unproven, and it is unknown whether an invoice's lifetime can be set equal to the 15-minute checkout hold (PRD §8) | High | First build slice is one test payment end to end; if the lifetime cannot be set, a payment after the hold lapsed goes through AC-19b (flow 3) | ivan lysakov — first build slice |
+| First payment integration, new authorization boundaries and public user text: security review required (PRD §6.1) | High | Run a security review and a multi-model review before the PR; tests for invalid `X-Sign`, foreign-resource probing and price tampering | ivan lysakov — before the PR |
+| Capstone defence date unknown (PRD §8) | Medium | Cut order: US-10 first (admin clears nicknames by one-off script), then US-01 (plans by script) | ivan lysakov — before `/sdlc:break-tasks` |
+| Partial unique indexes are hand-written SQL that a later Prisma migration diff could drop (ADR-0006) | Medium | Schema comment next to the models; the QG-1 concurrency test fails if an index is missing | ivan lysakov |
+| Outbox delivery is at-least-once: a non-idempotent handler would apply an effect twice (ADR-0005) | Medium | `ProcessedEvent` record per consumer; a replay test for every handler | ivan lysakov |
+| No alert channel, uptime monitor or accessibility-audit dependency yet (§7, QG-5, QG-6) | Medium | Alert-level entries are logged with `alert: true` now; choose a channel and monitor and add the audit dependency before the first season | ivan lysakov — before the first season |
+| A colony dies or a beekeeper drops out mid-season: handled only by the admin outside the product (PRD §8) | Medium | Counted in the "payment incidents" KPI; revisit before the first season | ivan lysakov — before the first season |
+| Brownfield: changing `publish()` to take a transaction touches `add-hive.action.ts` and `register-user.action.ts` | Low | Migrate both callers in the same task; no subscriber exists yet, so nothing else breaks | ivan lysakov |
+| Hosting may move to Cloudflare Workers (ADR-0001) | Low | Job endpoints are plain route handlers; only the cron config, Prisma driver adapter and photo storage would change | ivan lysakov |
+| `.claude/rules/apiary.md`, `docs/bc-map.md`, `src/modules/billing/README.md` and `src/shared/events/` do not yet reflect ADR-0004 and ADR-0007 | Low | One documentation task in `/sdlc:break-tasks`, done before the `apiary` handlers | ivan lysakov — before `/sdlc:break-tasks` |
 
 **Accepted debt (acceptable in v1, plan to fix later):**
-- <e.g. Goal entity is not versioned (immutable) — OK for v1, may need audit versioning in v2>
+- Daily cron on Vercel Hobby: a missed webhook for a client who left the hold screen activates the next day; move to an every-minute schedule before real money (§7).
+- Season is stored in `billing` although the glossary ties it to the apiary (ADR-0004).
+- The `apiary` rented mark can lag up to a day after season end; nothing displays it (ADR-0007).
+- Managed Postgres provider not chosen; any provider reachable from Vercel through `@prisma/adapter-pg` works.
 
 ## 12. Glossary
 
