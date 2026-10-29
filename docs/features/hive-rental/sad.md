@@ -428,14 +428,27 @@ Each top-3 goal from §1 expanded into a full scenario, plus the remaining PRD �
 
 ## 12. Glossary
 
-<!-- 🎯 Навіщо: ⭐ СЛОВНИК ДОМЕНУ, який припиняє суперечки через рік («checkpoint —      -->
-<!--           weekly чи biweekly? Quarter — календарний чи фіскальний?»).                -->
-<!-- 📋 Що писати: таблиця термін / значення. Бізнес-терміни + технічні вперемішку.       -->
-<!--           Один термін може мати дві мови у заголовку: «Goal (Обʼєктив)».              -->
-<!-- 📌 Приклад: «Lesson | урок усередині курсу, що складається з блоків (text, video)». -->
+Domain terms come from [CONTEXT.md](../../CONTEXT.md), which wins on any conflict. Terms marked † are new in this SAD and should be added to CONTEXT.md with `/sdlc:fix-term` (domain terms) or left here (technical terms).
 
 | Term | Meaning |
 |---|---|
-| <e.g. Goal> | <quarterly intent in statement form> |
-| <e.g. KR> | <Key Result — measurable target linked to a Goal> |
-| <e.g. Checkpoint> | <bi-weekly progress update on a KR> |
+| admin | A platform operator who verifies beekeepers and manages the plan catalogue (CONTEXT) |
+| beekeeper | An apiary owner, verified by an admin, who lists hives for rent and keeps caring for them (CONTEXT) |
+| client | A person with an account who chooses a plan, pays for it, and holds a hive rental (CONTEXT) |
+| visitor | Anyone browsing the public pages without signing in; not an access role (CONTEXT) |
+| checkout hold | A short, unpaid claim on a hive for the client who has started paying; lapses after 15 minutes or becomes a hive rental on confirmed payment (CONTEXT) |
+| hive rental | A client's exclusive claim on one hive for one season, from subscription activation to season end; stored as the `Subscription` row in `billing` (CONTEXT, ADR-0004) |
+| hive nickname | The name a client gives their rented hive for one hive rental, shown publicly next to the "rented" badge (CONTEXT) |
+| plan | A catalogue offer set by the admin: season price and honey quota; also called tariff (CONTEXT) |
+| subscription | A client's paid agreement on a plan; a season plan has one billing period equal to the season and is not renewed (CONTEXT) |
+| season | The period, with dates set by the beekeeper for their apiary, for which a hive is rented; read in Europe/Kyiv, inclusive of both dates (CONTEXT, PRD §1) |
+| season revenue | Sum of confirmed payments for hive rentals in one apiary season (CONTEXT) |
+| honey quota | Weight of raw honey the plan guarantees the client at season end (CONTEXT) |
+| plan-terms snapshot † | The season price and honey quota copied onto a checkout hold when it starts; the amount charged comes only from it (AC-05, AC-10) |
+| payment without a hive rental † | A confirmed payment whose hold lapsed and whose hive was taken; recorded as paid, not counted in season revenue, settled by the admin outside the product (AC-19b) |
+| rented mark † | `apiary`'s own copy of "this hive is rented", set by `PaymentSucceeded` and cleared by `SubscriptionEnded` or `SubscriptionSuspended`; display reads `billing`, not the mark (ADR-0004) |
+| `SubscriptionEnded` † | Domain event: a subscription's last paid period ran out without renewal; for a season plan, the season ended (ADR-0007) |
+| outbox | Table of domain events written in the same transaction as the state change and delivered at least once afterwards (ADR-0005) |
+| apply-once | Applying a Monobank status change to a payment only if that change has not been applied yet, whether it came from a webhook or from reconciliation |
+| reconciliation | Reading an invoice's status from Monobank when no webhook arrived, then applying it with apply-once (§6 flow 3) |
+| `X-Sign` | Monobank's ECDSA signature over the raw webhook body, verified with the key from `GET /api/merchant/pubkey` |
