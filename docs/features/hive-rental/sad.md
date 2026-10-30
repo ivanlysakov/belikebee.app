@@ -330,6 +330,498 @@ sequenceDiagram
 
 The same apply-once logic runs for a webhook that arrives after its hold lapsed, so a late confirmation and a reconciled one end in the same state.
 
+Flows 4–14 below cover every PRD §4 user story and §5 acceptance criterion, in user-story order. They use generic participants, each qualified by its domain role: `<service> rentals` owns plans, seasons, checkout holds, hive rentals and payments (ADR-0004); `<service> hives` owns apiaries, hives and the rented mark; `<service> accounts` owns sessions and display names; `<message-bus> outbox` delivers domain events (ADR-0005); `<external-system> payment provider` is the acquirer. Participant names are written as `#lt;…#gt;` because Mermaid strips a literal `<…>` as an HTML tag when it renders.
+
+### Flow 4: Create a plan (US-01: AC-01, AC-02, AC-03)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt; admin
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt; rentals
+    participant D as #lt;data-store#gt;
+
+    Note over U,UI: Precondition: the user is signed in
+    U->>UI: fills in name, season price in hryvnias and honey quota, submits
+    UI->>S: create plan with the form values
+    S->>S: check the session role, validate name not empty, price above zero, quota not below zero
+    alt role is beekeeper or client
+        S-->>UI: refused, only an admin manages plans
+        UI-->>U: says that only an admin manages plans
+    else a field is invalid
+        S-->>UI: rejected with each wrong field and its rule
+        UI-->>U: marks the field and says what it must be
+    else admin and all fields valid
+        S->>D: insert plan on sale, price in kopecks, honey quota
+        Note over S,D: persists Plan (catalogue queries filter on status on sale)
+        D-->>S: plan id
+        S-->>UI: plan created
+        UI-->>U: plan shown in the list of plans on sale
+    end
+    Note over U,D: Postcondition: the plan is in the catalogue that hive pages offer to clients
+```
+
+### Flow 5: Archive a plan, plan terms stay fixed (US-01: AC-04, AC-05, AC-03)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt; admin
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt; rentals
+    participant D as #lt;data-store#gt;
+
+    Note over U,UI: Precondition: a plan exists, on sale or archived, sold or not
+    U->>UI: opens the plan
+    UI->>S: read the plan
+    S->>D: read plan by id
+    D-->>S: plan with season price, honey quota and status
+    S-->>UI: plan with read-only terms
+    UI-->>U: terms shown as fixed, with the hint to archive and create a new plan
+    Note over UI,S: no change-terms command exists, so season price and honey quota cannot be edited
+    U->>UI: archives the plan
+    UI->>S: archive plan
+    S->>S: check the session role
+    alt role is beekeeper or client
+        S-->>UI: refused, only an admin manages plans
+        UI-->>U: says that only an admin manages plans
+    else admin
+        S->>D: set plan status archived with the archive time
+        Note over S,D: persists Plan status change
+        D-->>S: ack
+        S-->>UI: plan archived
+        UI-->>U: plan leaves the list of plans on sale
+    end
+    Note over U,D: Postcondition: hive pages stop offering the plan. Paid hive rentals and holds started before archiving keep their plan-terms snapshot and can still be paid
+```
+
+### Flow 6: Set or change apiary season dates (US-02: AC-06, AC-06b, AC-07, AC-08, AC-09)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt; beekeeper
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt; rentals
+    participant H as #lt;service#gt; hives
+    participant D as #lt;data-store#gt;
+
+    Note over U,UI: Precondition: the user is a signed-in, admin-verified beekeeper
+    U->>UI: enters season start and end dates for an apiary
+    UI->>S: set season for the apiary
+    S->>H: is this apiary owned by this beekeeper
+    H-->>S: owned, or not found
+    alt apiary missing or owned by another beekeeper
+        S-->>UI: apiary not found
+        UI-->>U: same answer as for a missing apiary
+    else end not after start, or end before today in Kyiv time
+        S-->>UI: rejected with the date rule
+        UI-->>U: a season must end after it starts and cannot end before today
+    else owned and dates valid
+        S->>D: one transaction locking the apiary's season - read the current or upcoming season with its live holds and hive rentals
+        D-->>S: season or none
+        alt no current or upcoming season
+            S->>D: insert season with start and end dates, commit
+            Note over S,D: persists Season (looked up by apiary and end date)
+            S-->>UI: season set
+            UI-->>U: apiary shows the season dates, its hives open for rent
+        else season has no hive rental and no live checkout hold
+            S->>D: update the season dates, commit
+            Note over S,D: persists Season date change
+            S-->>UI: season updated
+            UI-->>U: new dates shown on the apiary and its hive pages
+        else season has a hive rental or a live checkout hold
+            S-->>UI: refused, the dates of a season with rentals are fixed
+            UI-->>U: says the season dates are fixed
+        end
+    end
+    Note over U,D: Postcondition: an apiary has at most one current or upcoming season
+```
+
+### Flow 7: Hive page and public hive list (US-03, US-07, US-09: AC-10, AC-11, AC-23, AC-26)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt; visitor or client
+    participant UI as #lt;ui#gt;
+    participant H as #lt;service#gt; hives
+    participant S as #lt;service#gt; rentals
+    participant D as #lt;data-store#gt;
+
+    Note over U,UI: Precondition: none, the pages are public
+    U->>UI: opens the public hive list or a hive page
+    UI->>H: read public hive data
+    H->>D: read hives with apiary and photos
+    D-->>H: hives
+    H-->>UI: public hive data
+    UI->>S: rental status for these hives as of now in Kyiv time
+    S->>D: read seasons, live holds, active hive rentals and plans on sale for these hives
+    Note over S,D: reads by hive and season, hold expiry and rental status (informs data-model indexes)
+    D-->>S: seasons, holds, hive rentals, plans
+    S->>S: treat holds past expiry as lapsed and hive rentals past season end as ended
+    S-->>UI: status per hive with nickname, or season with plans on sale
+    alt hive rented in a season that has not ended
+        UI-->>U: rented badge and hive nickname, no plans, no client name, email or phone
+    else hive has a live checkout hold
+        UI-->>U: awaiting payment, no plans
+    else no current or upcoming season, including after the season ended
+        UI-->>U: no plans, renting opens once the beekeeper sets the season
+    else available
+        UI-->>U: each plan on sale with season price, honey quota and season dates
+    end
+    Note over U,D: Postcondition: nothing is written. From 00:00 Kyiv time after the season end date the hive loses its badge and nickname without waiting for a job
+```
+
+### Flow 8: Start a checkout hold (US-03: AC-10, AC-12, AC-13, AC-13b, AC-14, AC-05)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt; client
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt; rentals
+    participant D as #lt;data-store#gt;
+    participant X as #lt;external-system#gt; payment provider
+
+    Note over U,UI: Precondition: the hive page offers plans (flow 7)
+    U->>UI: picks a plan and confirms
+    UI->>S: start checkout for the hive and plan
+    S->>S: check the session
+    alt not signed in
+        S-->>UI: sign-in required
+        UI-->>U: asks to sign in or register as a client
+    else signed in as beekeeper or admin
+        S-->>UI: refused, only clients rent hives
+        UI-->>U: says that only clients rent hives
+    else signed in as client
+        S->>D: one transaction under a per-client lock - read the plan, the hive's season, the client's live hold and hive rentals
+        D-->>S: plan, season, holds, hive rentals
+        alt plan archived or unknown, or no current or upcoming season
+            S-->>UI: refused, plan not offered
+            UI-->>U: plan no longer offered, page reloads
+        else the client already holds this hive
+            S-->>UI: the existing hold with its time left
+            UI-->>U: back to their own hold, countdown continues
+        else the client holds another hive, or has a hive rental in an overlapping season
+            S-->>UI: refused, one hive at a time and one hive per season
+            UI-->>U: says they can pay for one hive at a time and rent one hive per season
+        else checks pass
+            S->>D: same transaction - lapse expired holds, insert hold with the full-season plan-terms snapshot, expiry start plus 15 min, commit
+            Note over S,D: persists CheckoutHold (unique live claim per hive and season, one live hold per client)
+            alt unique claim rejected
+                D-->>S: unique violation
+                S-->>UI: refused, someone else is paying for this hive
+                UI-->>U: says someone else is paying, try again later
+            else hold inserted
+                D-->>S: hold id
+                S->>X: create invoice for the snapshot amount, lifetime equal to the hold's time left
+                alt provider unavailable
+                    X-->>S: error
+                    S-->>UI: hold kept, payment not started
+                    UI-->>U: hold screen with countdown and a pay-again button (flow 10)
+                else invoice created
+                    X-->>S: invoice id and payment page link
+                    S->>D: store pending payment with invoice id, audit entry
+                    Note over S,D: persists Payment and PaymentAuditEntry (looked up by invoice id)
+                    S-->>UI: payment page link
+                    UI-->>U: hold screen with countdown, then the payment page
+                end
+            end
+        end
+    end
+    Note over U,X: Postcondition: at most one live claim per hive and season, other people see the hive as awaiting payment
+```
+
+### Flow 9: Payment status callback (US-04: AC-15, AC-16, AC-17, AC-18, AC-19b)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant X as #lt;external-system#gt; payment provider
+    participant S as #lt;service#gt; rentals
+    participant D as #lt;data-store#gt;
+    participant B as #lt;message-bus#gt; outbox
+    participant H as #lt;service#gt; hives
+
+    Note over X,S: Trigger: the provider sends a payment status callback for an invoice
+    X->>S: payment status callback with a signature over the raw body
+    S->>S: verify the signature with the provider's public key
+    alt signature invalid
+        S-->>X: rejected
+        Note over S,D: logged with an alert, nothing changes
+    else signature valid
+        S->>D: idempotency check - read the payment by invoice id with its applied status and modified time
+        D-->>S: payment
+        alt this status or a newer one is already applied
+            S-->>X: accepted, nothing changes
+        else success, and the hold is live or the hive is free and AC-12 still allows it
+            S->>D: one transaction - payment paid, hold converted, hive rental active, audit entry, outbox PaymentSucceeded
+            Note over S,D: persists Payment, CheckoutHold, Subscription, PaymentAuditEntry, OutboxEvent
+            S-->>X: accepted
+        else success, but the hold lapsed and the hive was taken or AC-12 forbids it
+            S->>D: one transaction - payment paid without a hive rental, audit entry
+            Note over S,D: persists Payment (listed for the admin to settle) and PaymentAuditEntry, logged with an alert
+            S-->>X: accepted
+        else failure
+            S->>D: one transaction - payment failed, audit entry, outbox PaymentFailed, hold kept until it expires
+            Note over S,D: persists Payment, PaymentAuditEntry, OutboxEvent
+            S-->>X: accepted
+        end
+        S->>B: after the response, dispatch pending events
+        B->>H: PaymentSucceeded
+        H->>H: idempotency check on the event id
+        H->>D: mark hive rented, record processed event id
+        Note over H,D: persists rented mark and ProcessedEvent
+    end
+    Note over S,X: the provider may resend a callback, apply-once makes it safe. A callback that never arrives is recovered by reconciliation (flow 3)
+    Note over B,H: retry on every checkout-hold screen refresh and the daily sweep
+    alt event still pending after 5 attempts
+        B->>D: keep the event pending, log an alert
+        Note over B,D: dead-letter after 5 failed attempts, the sweep keeps retrying
+    end
+```
+
+### Flow 10: Payment failed, retry within the hold, hold lapses (US-05: AC-18, AC-19, AC-19b)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt; client
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt; rentals
+    participant D as #lt;data-store#gt;
+    participant X as #lt;external-system#gt; payment provider
+
+    Note over U,UI: Precondition: the client started a checkout hold (flow 8)
+    U->>UI: hold screen refreshes the payment status
+    UI->>S: read hold and payment status
+    S->>D: read the hold with its expiry and its latest payment
+    D-->>S: hold and payment
+    alt hold live, payment failed
+        S-->>UI: failed, time left on the hold
+        UI-->>U: payment did not go through, try again, countdown keeps running
+    else hold lapsed, payment recorded as paid without a hive rental
+        S-->>UI: paid without a hive rental
+        UI-->>U: the money arrived, the hive was taken, the admin will contact you
+    end
+    U->>UI: pays again
+    UI->>S: retry payment for the hold
+    S->>D: read the hold
+    D-->>S: hold with its original expiry
+    alt hold still live
+        S->>X: create a new invoice for the snapshot amount, lifetime equal to the time left
+        X-->>S: invoice id and payment page link
+        S->>D: store a new pending payment for the same hold, audit entry, expiry unchanged
+        Note over S,D: persists Payment and PaymentAuditEntry (many payments per hold)
+        S-->>UI: payment page link
+        UI-->>U: payment page, other people still see the hive as awaiting payment
+    else hold lapsed after 15 minutes
+        S-->>UI: hold expired, no invoice created
+        UI-->>U: hold expired, start again if the hive is still available
+    end
+    Note over U,X: Postcondition: no money is taken after the hold lapses because each invoice expires with it (open question, §11). A client cannot release a hold early
+```
+
+### Flow 11: Set a hive nickname (US-06: AC-20, AC-21, AC-22)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt; client
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt; rentals
+    participant D as #lt;data-store#gt;
+
+    Note over U,UI: Precondition: offered right after the payment is confirmed, or from the client's own area during the hive rental
+    U->>UI: enters a hive nickname and saves
+    UI->>S: set nickname for the hive rental
+    S->>D: read the active hive rental by id held by this client
+    D-->>S: hive rental or none
+    alt no active hive rental held by this client
+        S-->>UI: hive rental not found
+        UI-->>U: same answer as for a missing hive rental
+    else empty after trimming spaces, or longer than 40 characters
+        S-->>UI: rejected
+        UI-->>U: a nickname must be 1 to 40 characters
+    else valid
+        S->>D: save the trimmed nickname on the hive rental, clear the moderation notice
+        Note over S,D: persists Subscription nickname
+        D-->>S: ack
+        S-->>UI: nickname saved
+        UI-->>U: nickname shown in the client's own area
+    end
+    Note over U,D: Postcondition: the hive page and public list show the nickname as plain text next to the rented badge
+```
+
+### Flow 12: Beekeeper sees hive rentals and season revenue (US-08: AC-24, AC-25)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt; beekeeper
+    participant UI as #lt;ui#gt;
+    participant H as #lt;service#gt; hives
+    participant S as #lt;service#gt; rentals
+    participant A as #lt;service#gt; accounts
+    participant D as #lt;data-store#gt;
+
+    Note over U,UI: Precondition: the user is a signed-in, admin-verified beekeeper
+    U->>UI: opens their own area or one of their apiaries
+    UI->>H: apiaries and hives owned by this beekeeper
+    H->>D: read apiaries and hives by owner
+    D-->>H: own apiaries and hives only
+    alt the requested apiary belongs to another beekeeper
+        H-->>UI: not found
+        UI-->>U: same answer as for a missing apiary
+    else own apiaries
+        H-->>UI: own apiaries and hives
+        UI->>S: hive rentals and season revenue for these apiaries as of now in Kyiv time
+        S->>D: read current or upcoming seasons, active hive rentals and paid payments linked to a hive rental
+        Note over S,D: reads by apiary and season, payment status (informs data-model indexes)
+        D-->>S: seasons, hive rentals, payments
+        S->>S: sum confirmed payments per season, skip holds, failed payments and payments without a hive rental
+        S-->>UI: per apiary the season dates, rented hives with plan, nickname and client id, season revenue
+        UI->>A: display names for these client ids
+        A-->>UI: display names
+        UI-->>U: season dates, rented hives with plan, nickname and client display name, season revenue
+    end
+    Note over U,D: Postcondition: nothing is written, seasons that have ended are not shown in v1
+```
+
+### Flow 13: Season end job (US-09: AC-26)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as #lt;client#gt; scheduler
+    participant S as #lt;service#gt; rentals
+    participant D as #lt;data-store#gt;
+    participant B as #lt;message-bus#gt; outbox
+    participant H as #lt;service#gt; hives
+
+    Note over C,S: Trigger: daily schedule shortly after 00:00 Kyiv time. Pages already show the hive rental as ended at read time (flow 7)
+    C->>S: run season end with the job secret
+    alt secret missing or wrong
+        S-->>C: rejected, logged with an alert
+    else secret valid
+        S->>D: read active hive rentals whose season end date is before today in Kyiv time
+        D-->>S: hive rentals to end
+        loop each hive rental
+            S->>D: idempotency check - one transaction, set ended only if still active, outbox SubscriptionEnded
+            Note over S,D: persists Subscription status ended and OutboxEvent
+        end
+        S-->>C: done, with a count
+        S->>B: dispatch pending events
+        B->>H: SubscriptionEnded
+        H->>H: idempotency check on the event id
+        H->>D: clear the rented mark, record processed event id
+        Note over H,D: persists rented mark and ProcessedEvent
+    end
+    Note over C,S: a failed run is logged with an alert and retried on the next daily run
+    Note over B,H: retry on every dispatch and the daily sweep
+    alt event still pending after 5 attempts
+        B->>D: keep the event pending, log an alert
+        Note over B,D: dead-letter after 5 failed attempts, the sweep keeps retrying
+    end
+    Note over C,H: Postcondition: the client's area shows the hive rental as ended, the hive can be rented again once the beekeeper sets the next season
+```
+
+### Flow 14: Clear an offensive hive nickname (US-10: AC-27, AC-28)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as #lt;user#gt; admin or beekeeper
+    participant UI as #lt;ui#gt;
+    participant S as #lt;service#gt; rentals
+    participant H as #lt;service#gt; hives
+    participant D as #lt;data-store#gt;
+
+    Note over U,UI: Precondition: a rented hive has a hive nickname
+    U->>UI: clears the hive nickname
+    UI->>S: clear the nickname for the hive
+    opt the user is a beekeeper
+        S->>H: is this hive owned by this beekeeper
+        H-->>S: owned, or not found
+    end
+    S->>D: read the hive's active hive rental with its nickname
+    D-->>S: hive rental or none
+    alt a client, a beekeeper who does not own the hive, or no nickname to clear
+        S-->>UI: nickname not found
+        UI-->>U: same answer as for a missing nickname
+    else admin, or the beekeeper who owns the hive
+        S->>D: clear the nickname, set the moderation notice for the client
+        Note over S,D: persists Subscription nickname cleared
+        D-->>S: ack
+        S-->>UI: nickname cleared
+        UI-->>U: nickname gone
+    end
+    Note over U,D: Postcondition: the nickname disappears from the hive page, public list and both areas. The client sees it was cleared and can set a new one
+```
+
+### Coverage: user stories and acceptance criteria → flows
+
+| User story | Flows |
+|---|---|
+| US-01 Create and archive plans | 4, 5 |
+| US-02 Set apiary season dates | 6 |
+| US-03 Choose a plan for a hive | 7, 8 (and 1) |
+| US-04 Pay for a hive rental | 9 (and 1, 2) |
+| US-05 Retry a failed payment | 10 (and 3) |
+| US-06 Name my rented hive | 11 |
+| US-07 See which hives are rented | 7 |
+| US-08 Track rentals and season revenue | 12 |
+| US-09 Free hives after season end | 13, 7 |
+| US-10 Clear an offensive nickname | 14 |
+
+| AC | Where it is shown |
+|---|---|
+| AC-01 | Flow 4, happy path |
+| AC-02 | Flow 4, `else a field is invalid` |
+| AC-03 | Flow 4 and flow 5, `alt role is beekeeper or client` |
+| AC-04 | Flow 5, read-only terms and the "no change-terms command" note |
+| AC-05 | Flow 5 postcondition; flow 8, `alt plan archived or unknown` |
+| AC-06 | Flow 6, `alt no current or upcoming season` |
+| AC-06b | Flow 6, `else season has no hive rental and no live checkout hold` |
+| AC-07 | Flow 6, `else end not after start, or end before today` |
+| AC-08 | Flow 6, `alt apiary missing or owned by another beekeeper` |
+| AC-09 | Flow 6, `else season has a hive rental or a live checkout hold` |
+| AC-10 | Flow 7, `else available`; flow 8, `else checks pass`; flow 1 |
+| AC-11 | Flow 7, `else no current or upcoming season` |
+| AC-12 | Flow 8, `else the client holds another hive, or has a hive rental in an overlapping season` |
+| AC-13 | Flow 8, `alt unique claim rejected`; flow 1 |
+| AC-13b | Flow 8, `else the client already holds this hive` |
+| AC-14 | Flow 8, `alt not signed in` and `else signed in as beekeeper or admin` |
+| AC-15 | Flow 9, `else success, and the hold is live`; flow 1 |
+| AC-16 | Flow 9, `alt this status or a newer one is already applied`; flow 1 |
+| AC-17 | Flow 9, outbox delivery to `<service> hives`; flow 2 |
+| AC-18 | Flow 9, `else failure`; flow 10, `alt hold live, payment failed` and `alt hold still live` |
+| AC-19 | Flow 10, `else hold lapsed after 15 minutes`; flow 3 |
+| AC-19b | Flow 9, `else success, but the hold lapsed`; flow 10, `else hold lapsed, payment recorded as paid without a hive rental`; flow 3 |
+| AC-20 | Flow 11, `else valid` |
+| AC-21 | Flow 11, `else empty after trimming spaces, or longer than 40 characters` |
+| AC-22 | Flow 11, `alt no active hive rental held by this client` |
+| AC-23 | Flow 7, `alt hive rented in a season that has not ended` |
+| AC-24 | Flow 12, `else own apiaries` |
+| AC-25 | Flow 12, `alt the requested apiary belongs to another beekeeper` |
+| AC-26 | Flow 7 (read-time end, `else no current or upcoming season`); flow 13 |
+| AC-27 | Flow 14, `else admin, or the beekeeper who owns the hive` |
+| AC-28 | Flow 14, `alt a client, a beekeeper who does not own the hive, or no nickname to clear` |
+
+No AC is non-runtime: every one is shown by a flow or a branch.
+
+### Flagged for architecture-design and generate-data-model
+
+- **Participant naming.** Flows 1–3 (written by architecture-design) name §5 containers. Flows 4–14 use generic participants with a domain role. Aligning the two styles is a manual edit if wanted.
+- **Season lock vs checkout start (flow 6, flow 8).** AC-09 needs the season-date change and a new checkout hold to serialize: the season change locks the apiary's season, so the checkout transaction must take the same lock or re-check the season's dates. ADR-0006 names only the per-client advisory lock. Candidate ADR-0006 amendment.
+- **One hold, many payments (flow 10).** Each retry within a hold creates a new invoice and a new `Payment` row for the same hold, with an unchanged expiry. generate-data-model: `Payment` → `CheckoutHold` is many-to-one, and lookups are by invoice id and by hold's latest payment.
+- **Provider unavailable at checkout start (flow 8).** Not demanded by a PRD AC: the hold stays and the client pays again from the hold screen (flow 10). Uses the same retry path, so no new rule.
+- **Moderation notice (flows 11, 14).** Clearing a nickname leaves a notice on the hive rental that the client sees (AC-27). Setting a new nickname removes the notice. New field on `Subscription` for generate-data-model.
+- **Dead-letter shape (flows 9, 13).** After 5 failed attempts an outbox event stays pending with an alert-level log entry and the sweep keeps retrying (§7). No separate dead-letter state exists. Revisit when the alert channel is chosen (§11).
+- **Index hints from persist and read notes.** `Plan` by status. `Season` by apiary and end date. `CheckoutHold` partial uniques per hive and season and per client (ADR-0006) plus expiry. `Payment` by invoice id and by hold. `Subscription` by hive, by client, by season, and by status with season end for the season-end job. `OutboxEvent` by pending status. `ProcessedEvent` by consumer and event id.
+
 ## 7. Deployment view
 
 One Next.js deploy on Vercel (ADR-0001) runs pages, server actions, the Monobank webhook and the three job endpoints as serverless functions; there is no long-running process. PostgreSQL 17 is a managed instance reached through `@prisma/adapter-pg` (provider not chosen yet, §11). Vercel Cron (Hobby plan) calls each job once a day as a backstop: outbox sweep, payment reconciliation, and season end shortly after 00:00 Europe/Kyiv. The fast path does not wait for cron: the webhook activates the hive rental and dispatches the outbox after the response, and every refresh of the checkout-hold screen dispatches pending events and, if no webhook has arrived about 20 s after payment started, reads the invoice status from Monobank and applies it through the same apply-once logic (flow 3). Hold expiry and the "rented" badge are computed at read time, so they need no job.
