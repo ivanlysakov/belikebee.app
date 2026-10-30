@@ -1,0 +1,10 @@
+{
+  "home": {
+    "title": "Rent a real hive at an apiary",
+    "lead": "The hive stays at a countryside apiary, a beekeeper looks after it, and its honey is yours at the end of the season.",
+    "rentalNote": "Renting opens together with plans. You can already look at the hives.",
+    "signedInAs": "Signed in as <strong>{email}</strong> ({role})",
+    "signedOut": "<signIn>Sign in</signIn> or <signUp>create an account</signUp>."
+  },
+  "language": "Language"
+}

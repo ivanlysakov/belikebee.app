@@ -1,0 +1,36 @@
+# Drafts release notes for the commits since the last tag (suggest mode).
+# Uploads the notes JSON and release.patch as an artifact; never commits or pushes.
+# Needs the repository secret ANTHROPIC_API_KEY.
+name: Release notes
+
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: Start ref (default the last tag)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: Draft notes into docs/CHANGELOG.md
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FROM: ${{ inputs.from }}
+        run: scripts/release-notes.sh ${FROM:+"$FROM"} > release-notes.json
+      - run: git diff -- docs/CHANGELOG.md > release.patch
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: |
+            release-notes.json
+            release.patch

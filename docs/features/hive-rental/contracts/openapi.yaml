@@ -1,0 +1,240 @@
+# hive-rental HTTP contract. Derived by api-forge from data-model.md, sad.md §5–§8 (flows 2, 3, 9, 13)
+# and PRD.md §5. Only real route handlers are here: the UI calls server actions (ADR-0003), described
+# in server-actions.md; domain events are in events.md. Project overrides: .claude/rules/openapi.md.
+openapi: 3.1.0
+
+info:
+  title: BeLikeBee hive-rental HTTP endpoints
+  version: 0.1.0
+  contact:
+    name: ivan lysakov (Backend Lead)
+  description: |
+    A client rents one specific hive for one apiary season and pays for it once through Monobank
+    acquiring (test mode only). These endpoints are the parts of that flow that are not driven by
+    the BeLikeBee UI: Monobank's payment status webhook, which turns a paid checkout hold into an
+    active hive rental, and the three scheduled jobs Vercel Cron calls as a backstop: outbox sweep,
+    payment reconciliation for missed webhooks, and season end (PRD §1, §2; sad.md §3, §7).
+
+tags:
+  - name: billing
+    description: Monobank payment status webhook
+  - name: jobs
+    description: Endpoints called by Vercel Cron
+
+servers:
+  - url: http://localhost:3000
+    description: Local (pnpm dev)
+
+# Default for the job endpoints. The webhook overrides it with its own signature scheme.
+security:
+  - CronSecret: []
+
+paths:
+  /api/billing/monobank/webhook:
+    post:
+      summary: Apply a Monobank payment status change
+      description: |
+        Verifies `X-Sign` over the raw body before parsing it. Applies the status change once per
+        invoice (apply-once: skipped when the stored status is the same or the stored
+        `providerModifiedAt` is not older than `modifiedDate`). Outcomes, all answered 200 so
+        Monobank stops resending: hive rental activated (AC-15); already applied (AC-16); paid after
+        the hold lapsed and the hive was taken, recorded as a payment without a hive rental and
+        alerted (AC-19b); payment failed, hold kept until it expires (AC-18); unknown invoice id,
+        logged with an alert. Pending outbox events are dispatched after the response (ADR-0005).
+      operationId: applyMonobankWebhook
+      tags: [billing]
+      security:
+        - MonobankSignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MonobankInvoiceStatus" }
+            examples:
+              success:
+                value:
+                  invoiceId: "p2_test0000001"
+                  status: success
+                  amount: 150000
+                  ccy: 980
+                  createdDate: "2027-03-01T09:00:00Z"
+                  modifiedDate: "2027-03-01T09:01:30Z"
+              failure:
+                value:
+                  invoiceId: "p2_test0000002"
+                  status: failure
+                  failureReason: "Test decline"
+                  amount: 150000
+                  ccy: 980
+                  createdDate: "2027-03-01T09:00:00Z"
+                  modifiedDate: "2027-03-01T09:02:00Z"
+      responses:
+        "200":
+          description: Accepted. Covers every outcome after a valid signature, including a repeat and an unknown invoice id.
+        "400":
+          description: Signature valid, but the body does not match `MonobankInvoiceStatus` (sad.md §8, Zod on the webhook body). Logged with an alert.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example:
+                code: billing.invalid_webhook_body
+                message: "The webhook body is not a Monobank invoice status."
+        "401":
+          description: "`X-Sign` missing or invalid after one public-key refetch (flow 9, alt signature invalid). Nothing changes; logged with an alert."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example:
+                code: billing.invalid_signature
+                message: "The X-Sign signature does not match the body."
+
+  /api/jobs/outbox:
+    get:
+      summary: Re-dispatch pending outbox events (daily backstop)
+      description: |
+        Delivers every pending `OutboxEvent` to its subscribers (flow 2). A handler failure keeps the
+        event pending and increments `attempts`; at 5 attempts an alert-level log entry is written
+        and the event stays pending (flows 9, 13). Safe to run twice: handlers are idempotent.
+      operationId: runOutboxSweep
+      tags: [jobs]
+      responses:
+        "204":
+          description: Sweep finished. Individual handler failures do not fail the run.
+        "401":
+          $ref: "#/components/responses/JobUnauthorized"
+        "500":
+          $ref: "#/components/responses/JobFailed"
+
+  /api/jobs/reconcile-payments:
+    get:
+      summary: Reconcile pending Monobank invoices (daily backstop)
+      description: |
+        Reads every `Payment` still `PENDING`, asks Monobank for its invoice status, and applies it
+        with the same apply-once logic as the webhook (flow 3): activate, record a payment without a
+        hive rental (AC-19b), or mark failed. Safe to run twice.
+      operationId: runPaymentReconciliation
+      tags: [jobs]
+      responses:
+        "204":
+          description: Reconciliation finished.
+        "401":
+          $ref: "#/components/responses/JobUnauthorized"
+        "500":
+          $ref: "#/components/responses/JobFailed"
+
+  /api/jobs/season-end:
+    get:
+      summary: End hive rentals whose season has ended
+      description: |
+        Runs daily shortly after 00:00 Europe/Kyiv (flow 13). Sets every `ACTIVE` subscription whose
+        season end date is before today in Kyiv time to `ENDED` and publishes `SubscriptionEnded`
+        in the same transaction (ADR-0007). Pages already show the rental as ended at read time
+        (AC-26); this job only settles stored state. Safe to run twice: a rental is ended only if
+        still active.
+      operationId: runSeasonEnd
+      tags: [jobs]
+      responses:
+        "200":
+          description: Done, with the number of hive rentals ended in this run (flow 13, "done, with a count").
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SeasonEndResult" }
+              example:
+                ended_count: 3
+        "401":
+          $ref: "#/components/responses/JobUnauthorized"
+        "500":
+          $ref: "#/components/responses/JobFailed"
+
+components:
+  securitySchemes:
+    CronSecret:
+      type: http
+      scheme: bearer
+      description: "`Authorization: Bearer <CRON_SECRET>`, the header Vercel Cron sends. Not a user token."
+    MonobankSignature:
+      type: apiKey
+      in: header
+      name: X-Sign
+      description: |
+        Base64 ECDSA signature over the raw request body, verified with the key from Monobank
+        `GET /api/merchant/pubkey` (cached, refetched once on failure). No shared secret.
+
+  responses:
+    JobUnauthorized:
+      description: Cron secret missing or wrong (flow 13, alt secret missing or wrong). Logged with an alert.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            code: jobs.unauthorized
+            message: "The job secret is missing or wrong."
+    JobFailed:
+      description: The run failed. Logged with an alert; the next scheduled run retries (flow 13).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example:
+            code: jobs.run_failed
+            message: "The job did not finish; see the logs for its request id."
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          pattern: "^[a-z_]+\\.[a-z_]+$"
+        message: { type: string }
+        details:
+          type: object
+          description: Optional structured context.
+
+    # Monobank's payload, not ours: field names and casing are the provider's. Only the fields
+    # billing reads are listed; unknown fields (paymentInfo, cancelList, …) are ignored and never
+    # stored, because they carry masked card data (SPEC §4).
+    MonobankInvoiceStatus:
+      type: object
+      required: [invoiceId, status, amount, ccy, modifiedDate]
+      additionalProperties: true
+      properties:
+        invoiceId:
+          type: string
+          maxLength: 64
+          description: Matches `Payment.invoiceId`.
+        status:
+          type: string
+          enum: [created, processing, hold, success, failure, reversed, expired]
+          description: |
+            Mapped to `Payment.status`: created, processing, hold → PENDING; success → PAID;
+            failure, expired → FAILED. reversed is out of scope in v1 (no refunds, PRD §3) and is
+            logged with an alert without a state change.
+        amount:
+          type: integer
+          minimum: 0
+          description: Kopecks. Compared with `Payment.amountKopecks`; a mismatch is logged with an alert and not applied.
+        ccy:
+          type: integer
+          description: ISO 4217 numeric currency code; 980 (UAH) expected.
+        failureReason:
+          type: string
+        errCode:
+          type: string
+        createdDate:
+          type: string
+          format: date-time
+        modifiedDate:
+          type: string
+          format: date-time
+          description: Stored as `Payment.providerModifiedAt`; drives apply-once.
+
+    SeasonEndResult:
+      type: object
+      required: [ended_count]
+      additionalProperties: false
+      properties:
+        ended_count:
+          type: integer
+          minimum: 0

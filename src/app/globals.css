@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* Palette: raw values named by what they are. Not exposed as utilities; only the roles below use them. */
+:root {
+  --white: oklch(1 0 0);
+  --neutral-50: oklch(0.985 0 0);
+  --neutral-100: oklch(0.97 0 0);
+  --neutral-200: oklch(0.922 0 0);
+  --neutral-400: oklch(0.708 0 0);
+  --neutral-500: oklch(0.556 0 0);
+  --neutral-900: oklch(0.205 0 0);
+  --neutral-950: oklch(0.145 0 0);
+  --red-600: oklch(0.577 0.245 27.325);
+  --wax-100: oklch(0.928 0.047 92.6);
+  --wax-300: oklch(0.865 0.073 92.7);
+  --wood-500: oklch(0.602 0.076 73.9);
+  --comb-600: oklch(0.483 0.058 66.7);
+  --propolis-900: oklch(0.273 0.029 50.5);
+}
+
+/* Roles: named by job, pointing at the palette (shadcn/ui neutral theme, light). Components read only these. */
+:root {
+  --radius: 0.625rem;
+  --background: var(--white);
+  --foreground: var(--neutral-950);
+  --primary: var(--neutral-900);
+  --primary-foreground: var(--neutral-50);
+  --secondary: var(--neutral-100);
+  --secondary-foreground: var(--neutral-900);
+  --muted-foreground: var(--neutral-500);
+  --accent: var(--neutral-100);
+  --accent-foreground: var(--neutral-900);
+  --destructive: var(--red-600);
+  --destructive-foreground: var(--white);
+  --border: var(--neutral-200);
+  --input: var(--neutral-200);
+  --ring: var(--neutral-400);
+  --comb-cell: var(--wax-300);
+  --hive-frame: var(--wood-500);
+}
+
+/* Public hive pages: the same roles, pointed at beeswax and propolis. */
+.theme-apiary {
+  --background: var(--wax-100);
+  --foreground: var(--propolis-900);
+  --muted-foreground: var(--comb-600);
+}
+
+@theme inline {
+  --radius-md: calc(var(--radius) - 2px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-comb-cell: var(--comb-cell);
+  --color-hive-frame: var(--hive-frame);
+  --font-serif: "Alegreya Variable", ui-serif, Georgia, serif;
+}
+
+/* Text roles that repeat across screens and change together. */
+@utility type-title {
+  @apply text-2xl font-semibold;
+}
+
+@utility type-section {
+  @apply text-lg font-semibold;
+}
+
+@utility type-muted {
+  @apply text-sm text-muted-foreground;
+}
+
+@utility type-error {
+  @apply text-sm text-destructive;
+}
+
+/* A sheet of wax foundation: one hexagonal cell per tile, drawn in the element's background color. */
+@utility wax-foundation {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6.928 12'%3E%3Cpath d='M3.464 0 6.928 2V6L3.464 8 0 6V2ZM3.464 8V12' fill='none' stroke='black' stroke-width='0.25'/%3E%3C/svg%3E");
+  mask-size: 14px 24.25px;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "myApiaries": "My apiaries",
+    "allApiaries": "All apiaries",
+    "browseHives": "Browse hives"
+  },
+  "list": {
+    "title": "My apiaries",
+    "empty": "No apiaries yet.",
+    "hiveCount": "{count, plural, =0 {no hives} one {# hive} other {# hives}}"
+  },
+  "create": {
+    "title": "New apiary",
+    "name": "Name",
+    "location": "Location",
+    "submit": "Create apiary",
+    "submitting": "Creating…"
+  },
+  "hives": {
+    "title": "Hives",
+    "empty": "No hives yet."
+  },
+  "addHive": {
+    "title": "Add a hive",
+    "name": "Hive name",
+    "description": "Description (optional)",
+    "submit": "Add hive",
+    "submitting": "Adding…"
+  },
+  "errors": {
+    "signInRequired": "Sign in first.",
+    "beekeepersOnly": "Only beekeepers can manage apiaries.",
+    "apiaryNotFound": "This apiary was not found.",
+    "nameRequired": "Enter a name.",
+    "nameTooLong": "Use at most 100 characters.",
+    "locationRequired": "Enter the location.",
+    "locationTooLong": "Use at most 200 characters.",
+    "descriptionTooLong": "Use at most 1000 characters.",
+    "verificationPending": "An admin has to verify your beekeeper account before you can manage apiaries.",
+    "photoInvalid": "Upload the photo again."
+  },
+  "browse": {
+    "title": "All hives",
+    "empty": "No hives on the platform yet."
+  },
+  "photo": {
+    "label": "Photo (optional)",
+    "uploading": "Uploading the photo…",
+    "failed": "The photo could not be uploaded. Try another file."
+  },
+  "profile": {
+    "apiaryHives": "{count, plural, one {an apiary of # hive} other {an apiary of # hives}}",
+    "rentalTitle": "Renting opens together with plans",
+    "rentalBody": "Then this page will show the price and a button to rent this hive."
+  }
+}

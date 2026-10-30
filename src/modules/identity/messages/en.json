@@ -1,0 +1,48 @@
+{
+  "signUp": {
+    "title": "Create an account",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "roleLegend": "I am a",
+    "roleClient": "Client: I want to rent a hive",
+    "roleBeekeeper": "Beekeeper: I run an apiary",
+    "submit": "Create account",
+    "submitting": "Creating account…",
+    "success": "Account created.",
+    "haveAccount": "Already registered?",
+    "signInLink": "Sign in"
+  },
+  "signIn": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "wrongCredentials": "Wrong email or password.",
+    "noAccount": "No account yet?",
+    "signUpLink": "Create one"
+  },
+  "signOut": "Sign out",
+  "roles": {
+    "CLIENT": "Client",
+    "BEEKEEPER": "Beekeeper",
+    "ADMIN": "Admin"
+  },
+  "errors": {
+    "emailInvalid": "Enter a valid email address.",
+    "emailTaken": "An account with this email already exists.",
+    "passwordTooShort": "Use at least 8 characters.",
+    "passwordTooLong": "Use at most 128 characters.",
+    "nameRequired": "Enter your name.",
+    "nameTooLong": "Use at most 100 characters.",
+    "roleInvalid": "Choose Client or Beekeeper."
+  },
+  "admin": {
+    "link": "Verify beekeepers",
+    "title": "Beekeepers waiting for verification",
+    "empty": "No beekeepers are waiting.",
+    "verify": "Verify",
+    "adminsOnly": "Only admins can verify beekeepers."
+  }
+}
